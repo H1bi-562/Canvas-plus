@@ -1,0 +1,26 @@
+{
+  "name": "canvas-plus",
+  "version": "1.0.0",
+  "description": "491A project environment",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/H1bi-562/Canvas-plus.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/H1bi-562/Canvas-plus/issues"
+  },
+  "homepage": "https://github.com/H1bi-562/Canvas-plus#readme",
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "pg": "^8.20.0"
+  }
+}
