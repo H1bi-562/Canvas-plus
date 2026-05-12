@@ -28,8 +28,10 @@ export default function App() {
   const [pushNotifications, setPushNotifications] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [signedInUser, setSignedInUser] = useState<string | null>(null);
-  
- 
+  const [assignmentDueWarning, setAssignmentDueWarning] = useState(false);
+  const [dueWarningTimeframe, setDueWarningTimeframe] = useState('24');
+  const [smartScheduler, setSmartScheduler] = useState(false);
+  const [assignmentDecomposition, setAssignmentDecomposition] = useState(false);
 
   const assignments = [
     {
@@ -153,6 +155,14 @@ export default function App() {
           pushNotifications={pushNotifications}
           setPushNotifications={setPushNotifications}
           setDarkMode={setDarkMode}
+          assignmentDueWarning={assignmentDueWarning}
+          setAssignmentDueWarning={setAssignmentDueWarning}
+          dueWarningTimeframe={dueWarningTimeframe}
+          setDueWarningTimeframe={setDueWarningTimeframe}
+          smartScheduler={smartScheduler}
+          setSmartScheduler={setSmartScheduler}
+          assignmentDecomposition={assignmentDecomposition}
+          setAssignmentDecomposition={setAssignmentDecomposition}
         />
       )}
 
