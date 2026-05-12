@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Auth</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f3f4f6;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    /* ── Tab bar ── */
+    .tab-bar {
+      display: flex;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px 0;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      color: #6b7280;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .tab-btn.active {
+      background: #f3f4f6;
+      color: #111827;
+    }
+
+    /* ── Form sections ── */
+    .form-section { display: none; }
+    .form-section.active { display: block; }
+
+    /* ── Fields ── */
+    .field { margin-bottom: 1rem; }
+
+    .field label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #6b7280;
+      margin-bottom: 6px;
+    }
+
+    .field-wrap { position: relative; }
+
+    .field-wrap .icon {
+      position: absolute;
+      left: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 15px;
+      color: #9ca3af;
+      pointer-events: none;
+      line-height: 1;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 9px 12px 9px 36px;
+      font-size: 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      outline: none;
+      color: #111827;
+      background: #fff;
+      transition: border-color 0.15s;
+    }
+
+    .field input.has-toggle { padding-right: 40px; }
+
+    .field input:focus { border-color: #1D9E75; }
+
+    .field.invalid input { border-color: #E24B4A; }
+    .field.invalid input:focus { border-color: #E24B4A; }
+
+    .err-msg {
+      font-size: 12px;
+      color: #E24B4A;
+      margin-top: 5px;
+      display: none;
+    }
+
+    .field.invalid .err-msg { display: block; }
+
+    /* ── Toggle password ── */
+    .toggle-pw {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #9ca3af;
+      font-size: 15px;
+      line-height: 1;
+      padding: 2px;
+    }
+
+    /* ── Strength bar ── */
+    .strength-bar {
+      height: 3px;
+      background: #e5e7eb;
+      border-radius: 2px;
+      margin-top: 6px;
+      overflow: hidden;
+    }
+
+    .strength-fill {
+      height: 100%;
+      width: 0;
+      border-radius: 2px;
+      transition: width 0.2s, background 0.2s;
+    }
+
+    .strength-label {
+      font-size: 11px;
+      margin-top: 4px;
+      color: #9ca3af;
+      min-height: 16px;
+    }
+
+    /* ── Submit button ── */
+    .submit-btn {
+      width: 100%;
+      padding: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: 8px;
+      background: #1D9E75;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 4px;
+      transition: opacity 0.15s;
+    }
+
+    .submit-btn:hover:not(:disabled) { opacity: 0.9; }
+    .submit-btn:active:not(:disabled) { opacity: 0.8; }
+    .submit-btn:disabled { opacity: 0.65; cursor: not-allowed; }
+
+    /* ── Spinner ── */
+    .spinner {
+      width: 15px;
+      height: 15px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      display: none;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Footer link ── */
+    .switch-link {
+      text-align: center;
+      font-size: 13px;
+      color: #6b7280;
+      margin-top: 1rem;
+    }
+
+    .switch-link button {
+      background: none;
+      border: none;
+      color: #1D9E75;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    /* ── Forgot password ── */
+    .forgot-row {
+      text-align: right;
+      margin-bottom: 1rem;
+    }
+
+    .forgot-row button {
+      background: none;
+      border: none;
+      font-size: 13px;
+      color: #1D9E75;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    /* ── Success screen ── */
+    .success-box {
+      text-align: center;
+      padding: 2rem 1rem;
+    }
+
+    .success-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: #E1F5EE;
+      margin: 0 auto 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      color: #0F6E56;
+    }
+
+    .success-title {
+      font-size: 16px;
+      font-weight: 500;
+      color: #111827;
+      margin-bottom: 6px;
+    }
+
+    .success-sub {
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    .back-btn {
+      margin-top: 1.5rem;
+      background: none;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 8px 20px;
+      font-size: 13px;
+      cursor: pointer;
+      color: #374151;
+    }
+
+    .back-btn:hover { background: #f9fafb; }
+  </style>
+</head>
+<body>
+
+<div class="card" id="card">
+
+  <!-- Tab bar -->
+  <div class="tab-bar" id="tabBar">
+    <button class="tab-btn active" id="tabLogin" onclick="switchTab('login')">Sign in</button>
+    <button class="tab-btn" id="tabRegister" onclick="switchTab('register')">Create account</button>
+  </div>
+
+  <!-- ── Login form ── -->
+  <div class="form-section active" id="loginSection">
+    <div class="field" id="lf-email">
+      <label for="l-email">Email address</label>
+      <div class="field-wrap">
+        <span class="icon">✉</span>
+        <input type="email" id="l-email" placeholder="you@example.com" autocomplete="email" />
+      </div>
+      <div class="err-msg" id="lf-email-err"></div>
+    </div>
+
+    <div class="field" id="lf-pw">
+      <label for="l-pw">Password</label>
+      <div class="field-wrap">
+        <span class="icon">🔒</span>
+        <input type="password" id="l-pw" class="has-toggle" placeholder="Your password" autocomplete="current-password" />
+        <button class="toggle-pw" onclick="togglePw('l-pw', this)" aria-label="Show password">👁</button>
+      </div>
+      <div class="err-msg" id="lf-pw-err"></div>
+    </div>
+
+    <div class="forgot-row">
+      <button type="button" onclick="alert('Reset link sent! (wire up your backend here)')">Forgot password?</button>
+    </div>
+
+    <button class="submit-btn" id="loginBtn" onclick="submitLogin()">
+      <div class="spinner" id="loginSpinner"></div>
+      <span id="loginBtnText">Sign in</span>
+    </button>
+
+    <div class="switch-link">
+      Don't have an account?
+      <button onclick="switchTab('register')">Create one</button>
+    </div>
+  </div>
+
+  <!-- ── Register form ── -->
+  <div class="form-section" id="registerSection">
+    <div class="field" id="rf-name">
+      <label for="r-name">Full name</label>
+      <div class="field-wrap">
+        <span class="icon">👤</span>
+        <input type="text" id="r-name" placeholder="Jane Smith" autocomplete="name" />
+      </div>
+      <div class="err-msg" id="rf-name-err"></div>
+    </div>
+
+    <div class="field" id="rf-email">
+      <label for="r-email">Email address</label>
+      <div class="field-wrap">
+        <span class="icon">✉</span>
+        <input type="email" id="r-email" placeholder="you@example.com" autocomplete="email" />
+      </div>
+      <div class="err-msg" id="rf-email-err"></div>
+    </div>
+
+    <div class="field" id="rf-pw">
+      <label for="r-pw">Password</label>
+      <div class="field-wrap">
+        <span class="icon">🔒</span>
+        <input type="password" id="r-pw" class="has-toggle" placeholder="Min. 8 characters"
+               autocomplete="new-password" oninput="updateStrength(this.value)" />
+        <button class="toggle-pw" onclick="togglePw('r-pw', this)" aria-label="Show password">👁</button>
+      </div>
+      <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
+      <div class="strength-label" id="strengthLabel"></div>
+      <div class="err-msg" id="rf-pw-err"></div>
+    </div>
+
+    <div class="field" id="rf-confirm">
+      <label for="r-confirm">Confirm password</label>
+      <div class="field-wrap">
+        <span class="icon">🔒</span>
+        <input type="password" id="r-confirm" class="has-toggle" placeholder="Repeat password" autocomplete="new-password" />
+        <button class="toggle-pw" onclick="togglePw('r-confirm', this)" aria-label="Show password">👁</button>
+      </div>
+      <div class="err-msg" id="rf-confirm-err"></div>
+    </div>
+
+    <button class="submit-btn" id="registerBtn" onclick="submitRegister()">
+      <div class="spinner" id="registerSpinner"></div>
+      <span id="registerBtnText">Create account</span>
+    </button>
+
+    <div class="switch-link">
+      Already have an account?
+      <button onclick="switchTab('login')">Sign in</button>
+    </div>
+  </div>
+
+  <!-- ── Success screen ── -->
+  <div class="form-section" id="successSection">
+    <div class="success-box">
+      <div class="success-icon">✓</div>
+      <div class="success-title" id="successTitle"></div>
+      <div class="success-sub" id="successSub"></div>
+      <button class="back-btn" onclick="resetToLogin()">Back to sign in</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ── Utilities ──────────────────────────────────────────────────────────────
+
+  function isValidEmail(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  }
+
+  function getStrength(pw) {
+    let score = 0;
+    if (pw.length >= 8)           score++;
+    if (/[A-Z]/.test(pw))         score++;
+    if (/[0-9]/.test(pw))         score++;
+    if (/[^A-Za-z0-9]/.test(pw))  score++;
+    const labels = ['', 'Weak', 'Fair', 'Good', 'Strong'];
+    const colors = ['', '#E24B4A', '#EF9F27', '#EF9F27', '#1D9E75'];
+    return { score, label: labels[score], color: colors[score] };
+  }
+
+  // Mark a field valid or invalid and show an optional error message
+  function setInvalid(fieldId, errId, message, invalid) {
+    const field = document.getElementById(fieldId);
+    const err   = document.getElementById(errId);
+    if (invalid) {
+      field.classList.add('invalid');
+      err.textContent = message;
+    } else {
+      field.classList.remove('invalid');
+    }
+  }
+
+  // Show/hide password and flip the toggle button label
+  function togglePw(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (input.type === 'password') {
+      input.type = 'text';
+      btn.textContent = '🙈';
+      btn.setAttribute('aria-label', 'Hide password');
+    } else {
+      input.type = 'password';
+      btn.textContent = '👁';
+      btn.setAttribute('aria-label', 'Show password');
+    }
+  }
+
+  // ── Strength meter ─────────────────────────────────────────────────────────
+
+  function updateStrength(pw) {
+    const fill  = document.getElementById('strengthFill');
+    const label = document.getElementById('strengthLabel');
+    if (!pw) { fill.style.width = '0'; label.textContent = ''; return; }
+
+    const { score, label: text, color } = getStrength(pw);
+    fill.style.width      = (score * 25) + '%';
+    fill.style.background = color;
+    label.textContent     = text;
+    label.style.color     = color;
+  }
+
+  // ── Tab switching ──────────────────────────────────────────────────────────
+
+  function switchTab(tab) {
+    document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+    document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
+    document.getElementById('loginSection').classList.toggle('active', tab === 'login');
+    document.getElementById('registerSection').classList.toggle('active', tab === 'register');
+    document.getElementById('successSection').classList.remove('active');
+    document.getElementById('tabBar').style.display = 'flex';
+  }
+
+  // ── Loading state helpers ──────────────────────────────────────────────────
+
+  function setLoading(btnId, spinnerId, textId, loading, label) {
+    const btn     = document.getElementById(btnId);
+    const spinner = document.getElementById(spinnerId);
+    const text    = document.getElementById(textId);
+    btn.disabled            = loading;
+    spinner.style.display   = loading ? 'block' : 'none';
+    text.textContent        = loading ? 'Please wait…' : label;
+  }
+
+  // ── Show success screen ────────────────────────────────────────────────────
+
+  function showSuccess(title, sub) {
+    document.getElementById('successTitle').textContent = title;
+    document.getElementById('successSub').textContent   = sub;
+    document.getElementById('tabBar').style.display     = 'none';
+    ['loginSection', 'registerSection'].forEach(function(id) {
+      document.getElementById(id).classList.remove('active');
+    });
+    document.getElementById('successSection').classList.add('active');
+  }
+
+  function resetToLogin() {
+    // Clear all inputs and errors
+    ['l-email', 'l-pw', 'r-name', 'r-email', 'r-pw', 'r-confirm'].forEach(function(id) {
+      document.getElementById(id).value = '';
+      document.getElementById(id).type = id.includes('pw') || id.includes('confirm') ? 'password' : 'email';
+    });
+    ['lf-email', 'lf-pw', 'rf-name', 'rf-email', 'rf-pw', 'rf-confirm'].forEach(function(id) {
+      document.getElementById(id).classList.remove('invalid');
+    });
+    document.getElementById('strengthFill').style.width = '0';
+    document.getElementById('strengthLabel').textContent = '';
+    switchTab('login');
+  }
+
+  // ── Login submit ───────────────────────────────────────────────────────────
+
+  function submitLogin() {
+    const email    = document.getElementById('l-email').value.trim();
+    const password = document.getElementById('l-pw').value;
+    let valid = true;
+
+    if (!isValidEmail(email)) {
+      setInvalid('lf-email', 'lf-email-err', 'Please enter a valid email address.', true);
+      valid = false;
+    } else {
+      setInvalid('lf-email', 'lf-email-err', '', false);
+    }
+
+    if (!password) {
+      setInvalid('lf-pw', 'lf-pw-err', 'Password is required.', true);
+      valid = false;
+    } else {
+      setInvalid('lf-pw', 'lf-pw-err', '', false);
+    }
+
+    if (!valid) return;
+
+    setLoading('loginBtn', 'loginSpinner', 'loginBtnText', true, 'Sign in');
+
+    // ── Replace this setTimeout with your real fetch call ──────────────────
+    // fetch('/api/login', {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify({ email, password })
+    // })
+    // .then(res => res.json())
+    // .then(data => {
+    //   if (data.error) { /* show error */ return; }
+    //   showSuccess("You're in!", `Welcome back, ${email.split('@')[0]}.`);
+    // })
+    // .catch(() => { /* handle network error */ })
+    // .finally(() => setLoading('loginBtn', 'loginSpinner', 'loginBtnText', false, 'Sign in'));
+    // ───────────────────────────────────────────────────────────────────────
+
+    setTimeout(function() {
+      setLoading('loginBtn', 'loginSpinner', 'loginBtnText', false, 'Sign in');
+      showSuccess("You're in!", "Welcome back, " + email.split('@')[0] + '.');
+    }, 1200);
+  }
+
+  // ── Register submit ────────────────────────────────────────────────────────
+
+  function submitRegister() {
+    const name     = document.getElementById('r-name').value.trim();
+    const email    = document.getElementById('r-email').value.trim();
+    const password = document.getElementById('r-pw').value;
+    const confirm  = document.getElementById('r-confirm').value;
+    let valid = true;
+
+    if (!name) {
+      setInvalid('rf-name', 'rf-name-err', 'Name is required.', true);
+      valid = false;
+    } else {
+      setInvalid('rf-name', 'rf-name-err', '', false);
+    }
+
+    if (!isValidEmail(email)) {
+      setInvalid('rf-email', 'rf-email-err', 'Please enter a valid email address.', true);
+      valid = false;
+    } else {
+      setInvalid('rf-email', 'rf-email-err', '', false);
+    }
+
+    if (password.length < 8) {
+      setInvalid('rf-pw', 'rf-pw-err', 'Password must be at least 8 characters.', true);
+      valid = false;
+    } else {
+      setInvalid('rf-pw', 'rf-pw-err', '', false);
+    }
+
+    if (confirm !== password) {
+      setInvalid('rf-confirm', 'rf-confirm-err', 'Passwords do not match.', true);
+      valid = false;
+    } else {
+      setInvalid('rf-confirm', 'rf-confirm-err', '', false);
+    }
+
+    if (!valid) return;
+
+    setLoading('registerBtn', 'registerSpinner', 'registerBtnText', true, 'Create account');
+
+    // ── Replace this setTimeout with your real fetch call ──────────────────
+    // fetch('/api/register', {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify({ name, email, password })
+    // })
+    // .then(res => res.json())
+    // .then(data => {
+    //   if (data.error) { /* show error */ return; }
+    //   showSuccess('Account created!', `Welcome, ${name.split(' ')[0]}. Check your email to verify.`);
+    // })
+    // .catch(() => { /* handle network error */ })
+    // .finally(() => setLoading('registerBtn', 'registerSpinner', 'registerBtnText', false, 'Create account'));
+    // ───────────────────────────────────────────────────────────────────────
+
+    setTimeout(function() {
+      setLoading('registerBtn', 'registerSpinner', 'registerBtnText', false, 'Create account');
+      showSuccess('Account created!', 'Welcome, ' + name.split(' ')[0] + '. Check your email to verify.');
+    }, 1400);
+  }
+</script>
+
+</body>
+</html>
