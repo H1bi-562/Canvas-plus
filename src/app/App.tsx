@@ -11,8 +11,7 @@ type ViewType = 'assignments' | 'calendar' | 'focus' | 'profile' | 'auth';
 
 export default function App() {
   const [selectedAssignment, setSelectedAssignment] = useState<number | null>(null);
-  const [currentView, setCurrentView] = useState<ViewType>('assignments');
-  const [focusModeEnabled, setFocusModeEnabled] = useState(false);
+  const [currentView, setCurrentView] = useState<ViewType>('auth');  const [focusModeEnabled, setFocusModeEnabled] = useState(false);
   const [blockedSites, setBlockedSites] = useState([
     'youtube.com',
     'discord.com',
@@ -28,13 +27,9 @@ export default function App() {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
-
-  // Auth state
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [signedInUser, setSignedInUser] = useState<string | null>(null);
+  
+ 
 
   const assignments = [
     {
@@ -88,13 +83,22 @@ export default function App() {
       <div className={`shadow-sm px-6 py-4 flex items-center justify-between ${darkMode ? 'bg-[#3a3a3a]' : 'bg-white'}`}>
         <h1 className={`text-2xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>CanvasPlus</h1>
         {currentView !== 'auth' && (
-          <button
-            onClick={() => setCurrentView('auth')}
-            className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded-lg transition-colors"
-          >
-            Log In / Sign Up
-          </button>
-        )}
+        <div className="flex items-center gap-4">
+      <span className={`${darkMode ? 'text-white' : 'text-gray-700'} font-medium`}>
+        {signedInUser ? `Welcome, ${signedInUser}` : 'Welcome'}
+        </span>
+
+    <button
+      onClick={() => {
+        setSignedInUser(null);
+        setCurrentView('auth');
+      }}
+      className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded-lg transition-colors"
+    >
+      Log Out
+    </button>
+  </div>
+)}
       </div>
 
       {/* Main Content */}
@@ -126,22 +130,13 @@ export default function App() {
       )}
 
       {currentView === 'auth' && (
-        <LoginPage
-          darkMode={darkMode}
-          isLogin={isLogin}
-          setIsLogin={setIsLogin}
-          email={email}
-          setEmail={setEmail}
-          password={password}
-          setPassword={setPassword}
-          confirmPassword={confirmPassword}
-          setConfirmPassword={setConfirmPassword}
-          showPassword={showPassword}
-          setShowPassword={setShowPassword}
-          onBackToApp={() => setCurrentView('assignments')}
-        />
-      )}
-
+  <LoginPage
+    onLoginSuccess={(name: string) => {
+    setSignedInUser(name);
+    setCurrentView('assignments');
+  }}
+  />
+)}
       {currentView === 'profile' && (
         <Settings
           darkMode={darkMode}
@@ -162,11 +157,13 @@ export default function App() {
       )}
 
       {/* Bottom Navigation */}
+      {currentView !== 'auth' && (
       <BottomNav
         currentView={currentView}
-        darkMode={darkMode}
-        onViewChange={setCurrentView}
+      darkMode={darkMode}
+      onViewChange={setCurrentView}
       />
+)}
 
       {/* Assignment Detail Panel */}
       <AssignmentDetails
