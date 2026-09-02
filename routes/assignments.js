@@ -7,6 +7,7 @@
 const express = require('express');
 const pool    = require('../db');
 const auth    = require('../middleware/authMiddleware');
+const { calculateWarningDate } = require('../utils/dateUtils');
 
 const router = express.Router();
 router.use(auth);
@@ -101,6 +102,11 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'title, courseID, and courseName are required' });
   }
 
+  let warningAt = null;
+  if (dueAt) {
+    warningAt = calculateWarningDate(dueAt, 24); // 24 hours before due date
+  }
+  
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -122,10 +128,10 @@ router.post('/', async (req, res) => {
     const assignResult = await client.query(
       `INSERT INTO "Assignment"
          ("userID", "courseID", title, description, points, "dueAt", "availableUntil")
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
       [req.user.id, courseID, title, description || null,
-       points || null, dueAt || null, availableUntil || null]
+       points || null, dueAt || null, availableUntil || null, warningAt ||null]
     );
 
     await client.query('COMMIT');

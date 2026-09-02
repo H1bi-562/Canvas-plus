@@ -6,6 +6,7 @@ const express = require('express');
 const bcrypt  = require('bcryptjs');
 const jwt     = require('jsonwebtoken');
 const pool    = require('../db');
+const axios   = require('axios');
 
 const router = express.Router();
 
@@ -107,4 +108,34 @@ router.post('/login', async (req, res) => {
   }
 });
 
-module.exports = router;
+// -- GET /api/auth/canvas/callback --------------------
+const CANVAS_REDIRECT_URI = 'http://localhost:3000/api/auth/canvas/callback';
+
+router.get('/canvas/callback', async (req, res) => {
+  const {code, error } = req.query;
+
+  if (error) return res.status(400).json({ error: 'User denied access' });
+  if (!code) return res.status(400).json({ error: 'Missing authorization code' });
+
+  try {
+    const tokenResponse = await axios.post(`https://canvas.instructure.com/login/oauth2/token`, null, {
+      params: {
+        grant_type: 'authorization_code',
+        client_id: process.env.CANVAS_CLIENT_ID,
+        client_secret: process.env.CANVAS_CLIENT_SECRET,
+        redirect_uri: CANVAS_REDIRECT_URI,
+        code: code
+      }
+    });
+    const { access_token, refresh_token } = tokenResponse.data;
+
+    // Tokens will be saved to the database here later
+
+    res.redirect('http://localhost:3000/dashboard?canvas_sync=success');
+  } catch (err) {
+    console.error('Canvas token error:', err.message);
+    res.status(500).json({ error: 'Failed to authenticate with Canvas' });
+  }
+});
+
+module.exports = router; 
