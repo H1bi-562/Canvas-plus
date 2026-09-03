@@ -3,12 +3,42 @@
 // UC4  – JWT token issued on login
 
 const express = require('express');
+const crypto  = require('crypto');
 const bcrypt  = require('bcryptjs');
 const jwt     = require('jsonwebtoken');
 const pool    = require('../db');
 const axios   = require('axios');
+const auth    = require('../middleware/authMiddleware');
 
 const router = express.Router();
+
+//Keep in sync with "expiresIn: '7d'" passed to jwt.sign() below
+//Used as the Token row's expiry
+const TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 Days in milliseconds
+
+
+//Signs JWT for "user" and records in Token table so it can be looked up later
+//or revoked.
+//expose .query() so that this can work inside or not of a transaction
+async function issueToken(queryable, user) {
+  const jti = crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + TOKEN_TTL_MS);
+  const token = jwt.sign(
+    { id: user.id, email: user.email, jti },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+
+  // either pg pool or transaction client (both)
+  await queryable.query(
+    'INSERT INTO "Token" (jti, "userID", "expiresAt") VALUES ($1, $2, $3)',
+    [jti, user.id, expiresAt]
+  );
+
+  return token;
+}
+
+
 
 // ── POST /api/auth/register ───────────────────────────────────────────────
 // Creates a new User row and an empty Config row linked to them.
@@ -44,14 +74,11 @@ router.post('/register', async (req, res) => {
       [user.id]
     );
 
-    await client.query('COMMIT');
+    //Issue JWT inside the same transaction so the Token rolls the registration instead
+    //of leaving user with untracked token if the transaction fails
+    const token = await issueToken(client, user);
 
-    // Issue JWT so user is logged in immediately after registering
-    const token = jwt.sign(
-      { id: user.id, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    await client.query('COMMIT');
 
     res.status(201).json({ token, user: { id: user.id, email: user.email } });
 
@@ -94,17 +121,29 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    const token = jwt.sign(
-      { id: user.id, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    const token = await issueToken(pool, user);
 
     res.json({ token, user: { id: user.id, email: user.email } });
 
   } catch (err) {
     console.error('Login error:', err.message);
     res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+// -- POST /api/auth/logout --------------------
+// Revokes the JWT that authenticated the request even if token is still valid
+// Runs through authMiddleware same as other route, req.user.jti is set
+router.post('/logout', auth, async (req, res) => {
+  try {
+    await pool.query(
+      'UPDATE "Token" SET revoked = TRUE, "revokedAt" = NOW() WHERE jti = $1',
+      [req.user.jti]
+    );
+    res.json({ message: 'Logged out successfully' });
+  } catch (err) {
+    console.error('Logout error:', err.message);
+    res.status(500).json({ error: 'Logout failed' });
   }
 });
 

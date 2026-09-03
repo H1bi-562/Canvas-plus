@@ -69,8 +69,40 @@ CREATE TABLE IF NOT EXISTS "CalendarEvent" (
   "eventEnd"     TIMESTAMPTZ
 );
 
+-- Week 1 addition Jace Orozco (UC4  JTW tracking/revoke)
+-- See migrations/001
+CREATE TABLE IF NOT EXISTS "Token" (
+  jti          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  "userID"     UUID        NOT NULL REFERENCES "User"(id) ON DELETE CASCADE,
+  "issuedAt"   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  "expiresAt"  TIMESTAMPTZ NOT NULL,
+  revoked      BOOLEAN     NOT NULL DEFAULT FALSE,
+  "revokedAt"  TIMESTAMPTZ
+);
+
+-- Week 1 addition Nathan Salazar & Jace Orozco (UC24 Study Sessions)
+-- See migrations/002
+CREATE TABLE IF NOT EXISTS "StudySession" (
+  id                UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  "userID"          UUID        NOT NULL REFERENCES "User"(id) ON DELETE CASCADE,
+  "assignmentID"    UUID        REFERENCES "Assignment"(id) ON DELETE SET NULL,
+  status            TEXT        NOT NULL DEFAULT 'active'
+                                 CHECK (status IN ('active', 'paused', 'completed')),
+  "startedAt"       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  "pausedAt"        TIMESTAMPTZ,
+  "endedAt"         TIMESTAMPTZ,
+  "durationSeconds" INTEGER,
+  "createdAt"       TIMESTAMPTZ DEFAULT NOW(),
+  "updatedAt"       TIMESTAMPTZ DEFAULT NOW()
+);
+
 CREATE INDEX IF NOT EXISTS idx_assignment_user   ON "Assignment"("userID");
 CREATE INDEX IF NOT EXISTS idx_assignment_course ON "Assignment"("courseID");
 CREATE INDEX IF NOT EXISTS idx_assignment_due    ON "Assignment"("dueAt");
 CREATE INDEX IF NOT EXISTS idx_event_assignment  ON "CalendarEvent"("assignmentID");
 CREATE INDEX IF NOT EXISTS idx_config_user       ON "Config"("userID");
+CREATE INDEX IF NOT EXISTS idx_token_user        ON "Token"("userID");
+CREATE INDEX IF NOT EXISTS idx_token_expires     ON "Token"("expiresAt");
+CREATE INDEX IF NOT EXISTS idx_studysession_user       ON "StudySession"("userID");
+CREATE INDEX IF NOT EXISTS idx_studysession_assignment ON "StudySession"("assignmentID");
+CREATE INDEX IF NOT EXISTS idx_studysession_status     ON "StudySession"("status");
