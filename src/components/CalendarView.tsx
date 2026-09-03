@@ -1,3 +1,5 @@
+import { Skeleton } from '../app/components/ui/skeleton';
+
 interface Assignment {
   id: number;
   title: string;
@@ -9,10 +11,16 @@ interface Assignment {
 interface CalendarViewProps {
   darkMode: boolean;
   assignments: Assignment[];
+  isLoading?: boolean;
   onSelectAssignment: (id: number) => void;
 }
 
-export default function CalendarView({ darkMode, assignments, onSelectAssignment }: CalendarViewProps) {
+export default function CalendarView({
+  darkMode,
+  assignments,
+  isLoading = false,
+  onSelectAssignment,
+}: CalendarViewProps) {
   // Generate calendar for current month (April 2026)
   const generateCalendar = () => {
     const daysInMonth = 30; // April has 30 days
@@ -49,7 +57,11 @@ export default function CalendarView({ darkMode, assignments, onSelectAssignment
   };
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-6">
+    <div
+      className="flex-1 overflow-y-auto px-4 py-6"
+      aria-busy={isLoading}
+      aria-label={isLoading ? 'Loading calendar assignments' : 'Calendar'}
+    >
       <div className="max-w-6xl mx-auto">
         <h2 className={`text-xl font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>April 2026</h2>
 
@@ -87,21 +99,26 @@ export default function CalendarView({ darkMode, assignments, onSelectAssignment
 
                       {/* Study blocks */}
                       <div className="space-y-1">
-                        {dayAssignments.map(assignment => (
-                          <div
-                            key={assignment.id}
-                            onClick={() => onSelectAssignment(assignment.id)}
-                            className={`text-xs p-1 rounded cursor-pointer ${
-                              assignment.priority === 'High'
-                                ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                                : assignment.priority === 'Medium'
-                                ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
-                                : 'bg-green-100 text-green-700 hover:bg-green-200'
-                            }`}
-                          >
-                            {assignment.title}
-                          </div>
-                        ))}
+                        {isLoading && [5, 6, 8, 10].includes(day) ? (
+                          <Skeleton className={`h-5 w-full ${darkMode ? 'bg-gray-600' : 'bg-gray-200'}`} />
+                        ) : (
+                          dayAssignments.map(assignment => (
+                            <button
+                              type="button"
+                              key={assignment.id}
+                              onClick={() => onSelectAssignment(assignment.id)}
+                              className={`block w-full text-left text-xs p-1 rounded cursor-pointer ${
+                                assignment.priority === 'High'
+                                  ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                  : assignment.priority === 'Medium'
+                                  ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                                  : 'bg-green-100 text-green-700 hover:bg-green-200'
+                              }`}
+                            >
+                              {assignment.title}
+                            </button>
+                          ))
+                        )}
                       </div>
                     </>
                   )}

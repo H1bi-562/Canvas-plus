@@ -1,4 +1,5 @@
 import { Calendar } from 'lucide-react';
+import { Skeleton } from '../app/components/ui/skeleton';
 
 interface Assignment {
   id: number;
@@ -11,15 +12,52 @@ interface Assignment {
 interface DashboardProps {
   assignments: Assignment[];
   darkMode: boolean;
+  isLoading?: boolean;
   onSelectAssignment: (id: number) => void;
   getPriorityColor: (priority: string) => string;
 }
 
-export default function Dashboard({ assignments, darkMode, onSelectAssignment, getPriorityColor }: DashboardProps) {
+export default function Dashboard({
+  assignments,
+  darkMode,
+  isLoading = false,
+  onSelectAssignment,
+  getPriorityColor,
+}: DashboardProps) {
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-6">
+    <div
+      className="flex-1 overflow-y-auto px-4 py-6"
+      aria-busy={isLoading}
+      aria-label={isLoading ? 'Loading assignments' : 'Assignments'}
+    >
       <div className="max-w-md mx-auto space-y-4">
-        {assignments.map((assignment) => (
+        {isLoading
+          ? Array.from({ length: 4 }, (_, index) => (
+              <div
+                key={index}
+                className={`rounded-lg shadow-sm p-3 w-80 mx-auto ${darkMode ? 'bg-[#3a3a3a]' : 'bg-white'}`}
+              >
+                <Skeleton className={`h-7 w-3/4 mb-3 ${darkMode ? 'bg-gray-600' : 'bg-gray-200'}`} />
+                <div className="space-y-3 mb-3">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className={`size-4 ${darkMode ? 'bg-gray-600' : 'bg-gray-200'}`} />
+                    <Skeleton className={`h-4 w-36 ${darkMode ? 'bg-gray-600' : 'bg-gray-200'}`} />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Priority:</span>
+                    <Skeleton className={`h-6 w-16 ${darkMode ? 'bg-gray-600' : 'bg-gray-200'}`} />
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  disabled
+                  className="w-full bg-blue-600 text-white py-2 px-4 rounded opacity-60 cursor-not-allowed"
+                >
+                  View Details
+                </button>
+              </div>
+            ))
+          : assignments.map((assignment) => (
           <div
             key={assignment.id}
             className={`rounded-lg shadow-sm p-3 w-80 mx-auto ${darkMode ? 'bg-[#3a3a3a]' : 'bg-white'}`}
@@ -49,7 +87,7 @@ export default function Dashboard({ assignments, darkMode, onSelectAssignment, g
               View Details
             </button>
           </div>
-        ))}
+            ))}
       </div>
     </div>
   );
