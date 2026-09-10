@@ -16,6 +16,16 @@ const router = express.Router();
 //Used as the Token row's expiry
 const TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 Days in milliseconds
 
+// UC4 – options for the httpOnly cookie the JWT is stored in
+// httpOnly: browser JS can't read it (blocks XSS token theft)
+// secure:  https-only in prod; must be false on http://localhost or the browser drops it
+const COOKIE_OPTS = {
+  httpOnly: true,
+  secure:   process.env.NODE_ENV === 'production',
+  sameSite: 'strict',
+  maxAge:   TOKEN_TTL_MS,
+};
+
 
 //Signs JWT for "user" and records in Token table so it can be looked up later
 //or revoked.
@@ -80,7 +90,10 @@ router.post('/register', async (req, res) => {
 
     await client.query('COMMIT');
 
-    res.status(201).json({ token, user: { id: user.id, email: user.email } });
+    res
+      .cookie('token', token, COOKIE_OPTS)   // UC4 – JWT stored in httpOnly cookie
+      .status(201)
+      .json({ user: { id: user.id, email: user.email } });
 
   } catch (err) {
     await client.query('ROLLBACK');
@@ -123,7 +136,9 @@ router.post('/login', async (req, res) => {
 
     const token = await issueToken(pool, user);
 
-    res.json({ token, user: { id: user.id, email: user.email } });
+    res
+      .cookie('token', token, COOKIE_OPTS)   // UC4 – JWT stored in httpOnly cookie
+      .json({ user: { id: user.id, email: user.email } });
 
   } catch (err) {
     console.error('Login error:', err.message);
@@ -140,6 +155,7 @@ router.post('/logout', auth, async (req, res) => {
       'UPDATE "Token" SET revoked = TRUE, "revokedAt" = NOW() WHERE jti = $1',
       [req.user.jti]
     );
+    res.clearCookie('token', COOKIE_OPTS);   // UC4 – remove the httpOnly cookie
     res.json({ message: 'Logged out successfully' });
   } catch (err) {
     console.error('Logout error:', err.message);
