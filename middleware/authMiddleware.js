@@ -4,13 +4,15 @@ const pool = require('../db');
 // Attach verified user to req.user on every protected route
 // Checks table so logged out or revoked JWT tokens are rejected even if unexpired
 async function authMiddleware(req, res, next) {
+  // UC4 – prefer the httpOnly cookie; fall back to Authorization header (API tools, curl)
   const authHeader = req.headers['authorization'];
+  const token =
+    req.cookies?.token ||
+    (authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null);
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Missing or malformed Authorization header' });
+  if (!token) {
+    return res.status(401).json({ error: 'Not authenticated' });
   }
-
-  const token = authHeader.split(' ')[1];
 
   let decoded;
   try {

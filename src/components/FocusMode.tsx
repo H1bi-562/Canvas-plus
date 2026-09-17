@@ -1,4 +1,9 @@
+import { useMemo, useState } from 'react';
 import { Shield, X } from 'lucide-react';
+import StudyTimer from './StudyTimer';
+import { FINISHED_STATUSES, type Assignment } from '../lib/assignmentsApi';
+import EstimateEditor from './EstimateEditor';
+import type { StudySession } from '../lib/sessionsApi';
 
 interface FocusModeProps {
   darkMode: boolean;
@@ -6,6 +11,10 @@ interface FocusModeProps {
   setFocusModeEnabled: (value: boolean) => void;
   blockedSites: string[];
   setBlockedSites: (sites: string[]) => void;
+  /** The student's assignments, so a session can be tied to one (UC21 needs this). */
+  assignments: Assignment[];
+  /** Reload assignments after a session ends or an estimate is saved. */
+  onAssignmentsChanged: () => void;
 }
 
 export default function FocusMode({
@@ -13,8 +22,30 @@ export default function FocusMode({
   focusModeEnabled,
   setFocusModeEnabled,
   blockedSites,
-  setBlockedSites
+  setBlockedSites,
+  assignments,
+  onAssignmentsChanged,
 }: FocusModeProps) {
+  const [selectedID, setSelectedID] = useState<string>('');
+  const [openSession, setOpenSession] = useState<StudySession | null>(null);
+
+  // Unfinished work only, upcoming first, then overdue, so the likeliest pick is
+  // on top. The assignment of an open session stays listed even if finished.
+  const choices = useMemo(() => {
+    const now = Date.now();
+    const due = (a: Assignment) => (a.dueAt ? new Date(a.dueAt).getTime() : Infinity);
+    const open = assignments.filter((a) =>
+      !FINISHED_STATUSES.has(a.completionStatus) || a.id === openSession?.assignmentID);
+    const upcoming = open.filter((a) => due(a) >= now).sort((a, b) => due(a) - due(b));
+    const overdue  = open.filter((a) => due(a) < now).sort((a, b) => due(b) - due(a));
+    return [...upcoming, ...overdue];
+  }, [assignments, openSession]);
+
+  // While a session is open it owns the assignment; the picker only mirrors it.
+  const locked = openSession !== null;
+  const activeID = locked ? (openSession.assignmentID ?? '') : selectedID;
+  const activeAssignment = assignments.find((a) => a.id === activeID) || null;
+
   const removeSite = (index: number) => {
     setBlockedSites(blockedSites.filter((_, i) => i !== index));
   };
@@ -27,6 +58,62 @@ export default function FocusMode({
     <div className="flex-1 overflow-y-auto px-4 py-6">
       <div className="max-w-2xl mx-auto">
         <h2 className={`text-xl font-semibold mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Focus Mode</h2>
+
+        {/* Study session timer (UC24) — tracks time on the server so it
+            survives the popup closing or the service worker being evicted. */}
+        <div className="mb-6">
+          <div className={`rounded-lg shadow-sm p-4 mb-3 ${darkMode ? 'bg-[#3a3a3a]' : 'bg-white'}`}>
+            <label
+              htmlFor="focus-assignment"
+              className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}
+            >
+              What are you working on?
+            </label>
+            <select
+              id="focus-assignment"
+              value={activeID}
+              onChange={(e) => setSelectedID(e.target.value)}
+              disabled={locked}
+              className={`w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-70 ${
+                darkMode ? 'bg-[#2d2d2d] border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+              }`}
+            >
+              <option value="">General study (no assignment)</option>
+              {choices.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.courseCode ? `${a.courseCode.split('-')[0]} · ` : ''}{a.title} — {a.dueLabel}
+                </option>
+              ))}
+            </select>
+            <p className={`mt-2 text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              {locked
+                ? 'End the current session to switch assignments.'
+                : assignments.length === 0
+                  ? 'No assignments yet — connect Canvas or load demo data in Settings.'
+                  : 'Time is logged against this assignment for your study analytics.'}
+            </p>
+
+            {/* Ask once, before the first session, so estimated vs. actual has both halves. */}
+            {activeAssignment && activeAssignment.estimatedMinutes == null && (
+              <div className={`mt-4 pt-4 border-t ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}>
+                <EstimateEditor
+                  key={activeAssignment.id}
+                  assignmentID={activeAssignment.id}
+                  estimatedMinutes={null}
+                  darkMode={darkMode}
+                  onSaved={onAssignmentsChanged}
+                />
+              </div>
+            )}
+          </div>
+          <StudyTimer
+            darkMode={darkMode}
+            assignmentID={activeID || null}
+            assignmentTitle={activeAssignment?.title ?? null}
+            onSessionChange={setOpenSession}
+            onSessionEnd={onAssignmentsChanged}
+          />
+        </div>
 
         {/* Focus Mode Toggle */}
         <div className={`rounded-lg shadow-sm p-6 mb-6 ${darkMode ? 'bg-[#3a3a3a]' : 'bg-white'}`}>

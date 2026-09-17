@@ -1,5 +1,5 @@
 -- Migration: Study session tracking & timer
-REATE TABLE IF NOT EXISTS "StudySession" (
+CREATE TABLE IF NOT EXISTS "StudySession" (
   id                UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   "userID"          UUID        NOT NULL REFERENCES "User"(id) ON DELETE CASCADE,
   "assignmentID"    UUID        REFERENCES "Assignment"(id) ON DELETE SET NULL,

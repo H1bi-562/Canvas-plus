@@ -1,20 +1,17 @@
 import { Calendar } from 'lucide-react';
 import { Skeleton } from '../app/components/ui/skeleton';
-
-interface Assignment {
-  id: number;
-  title: string;
-  dueDate: string;
-  priority: string;
-  description: string;
-}
+import { formatMinutes, type Assignment } from '../lib/assignmentsApi';
+import CompletionBadge from './CompletionBadge';
 
 interface DashboardProps {
   assignments: Assignment[];
   darkMode: boolean;
   isLoading?: boolean;
-  onSelectAssignment: (id: number) => void;
+  onSelectAssignment: (id: string) => void;
   getPriorityColor: (priority: string) => string;
+  /** Shown instead of the list when loading assignments failed. */
+  error?: string | null;
+  onOpenSettings?: () => void;
 }
 
 export default function Dashboard({
@@ -23,7 +20,35 @@ export default function Dashboard({
   isLoading = false,
   onSelectAssignment,
   getPriorityColor,
+  error = null,
+  onOpenSettings,
 }: DashboardProps) {
+  const muted = darkMode ? 'text-gray-300' : 'text-gray-600';
+
+  if (!isLoading && (error || assignments.length === 0)) {
+    return (
+      <div className="flex-1 overflow-y-auto px-4 py-6">
+        <div className={`rounded-lg shadow-sm p-6 max-w-md mx-auto text-center ${darkMode ? 'bg-[#3a3a3a]' : 'bg-white'}`}>
+          <h2 className={`text-lg font-medium mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+            {error ? 'Could not load assignments' : 'No assignments yet'}
+          </h2>
+          <p className={`text-sm mb-4 ${muted}`}>
+            {error || 'Connect Canvas in Settings to sync your assignments.'}
+          </p>
+          {onOpenSettings && (
+            <button
+              type="button"
+              onClick={onOpenSettings}
+              className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-5 rounded-lg transition-colors"
+            >
+              Go to Settings
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="flex-1 overflow-y-auto px-4 py-6"
@@ -62,6 +87,18 @@ export default function Dashboard({
             key={assignment.id}
             className={`rounded-lg shadow-sm p-3 w-80 mx-auto ${darkMode ? 'bg-[#3a3a3a]' : 'bg-white'}`}
           >
+            <div className="flex items-center gap-2 mb-1">
+              {assignment.courseCode && (
+                <span className={`text-xs font-medium ${muted}`}>{assignment.courseCode}</span>
+              )}
+              {assignment.isDemo && (
+                <span className={`text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded ${
+                  darkMode ? 'bg-purple-900/40 text-purple-300' : 'bg-purple-50 text-purple-700'
+                }`}>
+                  Demo
+                </span>
+              )}
+            </div>
             <h2 className={`text-lg font-medium mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
               {assignment.title}
             </h2>
@@ -69,15 +106,23 @@ export default function Dashboard({
             <div className="space-y-2 mb-3">
               <div className={`flex items-center text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                 <Calendar className="w-4 h-4 mr-2" />
-                <span>Due: {assignment.dueDate}</span>
+                <span>Due: {assignment.dueLabel}</span>
               </div>
 
-              <div className="flex items-center">
-                <span className={`text-sm mr-2 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Priority:</span>
+              <div className="flex items-center gap-2">
+                <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Priority:</span>
                 <span className={`text-sm px-2 py-1 rounded ${getPriorityColor(assignment.priority)}`}>
                   {assignment.priority}
                 </span>
+                <CompletionBadge status={assignment.completionStatus} darkMode={darkMode} />
               </div>
+
+              {(assignment.loggedMinutes > 0 || assignment.estimatedMinutes != null) && (
+                <p className={`text-xs ${muted}`}>
+                  {formatMinutes(assignment.loggedMinutes)} studied
+                  {assignment.estimatedMinutes != null && <> · ~{formatMinutes(assignment.estimatedMinutes)} estimated</>}
+                </p>
+              )}
             </div>
 
             <button

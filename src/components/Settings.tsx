@@ -1,13 +1,10 @@
 import { Eye, EyeOff } from 'lucide-react';
+import CanvasConnection from './CanvasConnection';
 
 interface SettingsProps {
   darkMode: boolean;
-  canvasApiKey: string;
-  setCanvasApiKey: (value: string) => void;
   aiApiKey: string;
   setAiApiKey: (value: string) => void;
-  showCanvasKey: boolean;
-  setShowCanvasKey: (value: boolean) => void;
   showAiKey: boolean;
   setShowAiKey: (value: boolean) => void;
   emailNotifications: boolean;
@@ -24,16 +21,14 @@ interface SettingsProps {
   setSmartScheduler: (value: boolean) => void;
   assignmentDecomposition: boolean;
   setAssignmentDecomposition: (value: boolean) => void;
+  /** Reload the assignment list after a Canvas sync or demo data change. */
+  onAssignmentsChanged: () => void;
 }
 
 export default function Settings({
   darkMode,
-  canvasApiKey,
-  setCanvasApiKey,
   aiApiKey,
   setAiApiKey,
-  showCanvasKey,
-  setShowCanvasKey,
   showAiKey,
   setShowAiKey,
   emailNotifications,
@@ -49,6 +44,7 @@ export default function Settings({
   setSmartScheduler,
   assignmentDecomposition,
   setAssignmentDecomposition,
+  onAssignmentsChanged,
 }: SettingsProps) {
 
   const Toggle = ({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) => (
@@ -82,30 +78,8 @@ export default function Settings({
       <div className={`px-6 py-6 min-h-full ${darkMode ? 'bg-[#2d2d2d]' : 'bg-gray-50'}`}>
         <div className="max-w-3xl mx-auto space-y-6">
 
-          {/* Canvas Integration */}
-          <div className={`rounded-lg shadow-sm p-6 ${darkMode ? 'bg-[#3a3a3a]' : 'bg-white'}`}>
-            <h2 className={`font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Canvas Integration</h2>
-            <div>
-              <label className={`block text-sm mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Canvas API Key</label>
-              <div className="relative">
-                <input
-                  type={showCanvasKey ? 'text' : 'password'}
-                  value={canvasApiKey}
-                  onChange={(e) => setCanvasApiKey(e.target.value)}
-                  placeholder="Enter your Canvas API key"
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10 ${
-                    darkMode ? 'bg-[#2d2d2d] border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'
-                  }`}
-                />
-                <button
-                  onClick={() => setShowCanvasKey(!showCanvasKey)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showCanvasKey ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
-          </div>
+          {/* Canvas Integration — token connect, sync, and dev-only demo data */}
+          <CanvasConnection darkMode={darkMode} onAssignmentsChanged={onAssignmentsChanged} />
 
           {/* Google Integration */}
           <div className={`rounded-lg shadow-sm p-6 ${darkMode ? 'bg-[#3a3a3a]' : 'bg-white'}`}>

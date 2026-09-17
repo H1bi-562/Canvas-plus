@@ -1,18 +1,15 @@
 import { Skeleton } from '../app/components/ui/skeleton';
 
-interface Assignment {
-  id: number;
-  title: string;
-  dueDate: string;
-  priority: string;
-  description: string;
-}
+import type { Assignment as SharedAssignment } from '../lib/assignmentsApi';
+
+type Assignment = Pick<SharedAssignment, 'id' | 'title' | 'dueDate' | 'priority'>;
+
 
 interface CalendarViewProps {
   darkMode: boolean;
   assignments: Assignment[];
   isLoading?: boolean;
-  onSelectAssignment: (id: number) => void;
+  onSelectAssignment: (id: string) => void;
 }
 
 export default function CalendarView({
@@ -21,10 +18,16 @@ export default function CalendarView({
   isLoading = false,
   onSelectAssignment,
 }: CalendarViewProps) {
-  // Generate calendar for current month (April 2026)
+  // The month being shown. Was hardcoded to April 2026; now follows today so
+  // synced and demo assignments land on the grid.
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth(); // 0-based
+  const monthLabel = today.toLocaleString(undefined, { month: 'long', year: 'numeric' });
+
   const generateCalendar = () => {
-    const daysInMonth = 30; // April has 30 days
-    const firstDayOfWeek = 2; // April 1, 2026 is a Wednesday (0=Sun, 2=Wed)
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const firstDayOfWeek = new Date(year, month, 1).getDay(); // 0=Sun
     const weeks = [];
     let currentWeek = new Array(firstDayOfWeek).fill(null);
 
@@ -52,7 +55,7 @@ export default function CalendarView({
   // Get assignments for a specific date
   const getAssignmentsForDate = (day: number) => {
     if (!day) return [];
-    const dateString = `2026-04-${String(day).padStart(2, '0')}`;
+    const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     return assignments.filter(a => a.dueDate === dateString);
   };
 
@@ -63,7 +66,7 @@ export default function CalendarView({
       aria-label={isLoading ? 'Loading calendar assignments' : 'Calendar'}
     >
       <div className="max-w-6xl mx-auto">
-        <h2 className={`text-xl font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>April 2026</h2>
+        <h2 className={`text-xl font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>{monthLabel}</h2>
 
         {/* Calendar Grid */}
         <div className={`rounded-lg shadow-sm overflow-hidden mb-6 ${darkMode ? 'bg-[#3a3a3a]' : 'bg-white'}`}>

@@ -1,6 +1,6 @@
-import { Home, Shield, Calendar, User } from 'lucide-react';
+import { Home, Shield, Calendar, User, BarChart3 } from 'lucide-react';
 
-type ViewType = 'assignments' | 'calendar' | 'focus' | 'profile' | 'auth';
+type ViewType = 'assignments' | 'calendar' | 'focus' | 'analytics' | 'profile' | 'auth';
 
 interface BottomNavProps {
   currentView: ViewType;
@@ -31,6 +31,15 @@ export default function BottomNav({ currentView, darkMode, onViewChange }: Botto
         >
           <Shield className="w-6 h-6" />
           <span className="text-xs">Focus</span>
+        </button>
+        <button
+          onClick={() => onViewChange('analytics')}
+          className={`flex flex-col items-center gap-1 ${
+            currentView === 'analytics' ? 'text-blue-600' : (darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700')
+          }`}
+        >
+          <BarChart3 className="w-6 h-6" />
+          <span className="text-xs">Analytics</span>
         </button>
         <button
           onClick={() => onViewChange('calendar')}

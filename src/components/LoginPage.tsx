@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { API_BASE } from "../lib/sessionsApi";
 
 type LoginPageProps = {
   onLoginSuccess?: (name: string) => void;
@@ -85,11 +86,13 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
     setLoginLoading(true);
 
     try {
-      /*
-      Replace this temporary success with your real backend call later:
-
-      const response = await fetch("http://localhost:5000/api/login", {
+      // The API mounts auth at /api/auth on port 3000 (see server.js). The
+      // placeholder this replaced pointed at :5000/api/login, which is both the
+      // wrong port and the wrong path.
+      const response = await fetch(`${API_BASE}/api/auth/login`, {
         method: "POST",
+        // UC4 – without this the browser ignores the cross-origin Set-Cookie.
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: loginEmail,
@@ -101,27 +104,24 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
 
       if (!response.ok) {
         setErrors({ loginPassword: data.error || "Login failed." });
+        setLoginLoading(false);
         return;
       }
 
-      localStorage.setItem("canvasplus_token", data.token);
-      */
+      setLoginLoading(false);
 
-      setTimeout(() => {
-  setLoginLoading(false);
+      const emailForName = data.user?.email || loginEmail;
+      const displayName =
+        emailForName.split("@")[0].charAt(0).toUpperCase() +
+        emailForName.split("@")[0].slice(1);
 
-  const displayName =
-    loginEmail.split("@")[0].charAt(0).toUpperCase() +
-    loginEmail.split("@")[0].slice(1);
+      showSuccess("You're in!", `Welcome back, ${displayName}.`);
 
-  showSuccess("You're in!", `Welcome back, ${displayName}.`);
-
-  if (onLoginSuccess) {
-    setTimeout(() => {
-      onLoginSuccess(displayName);
-    }, 900);
-  }
-}, 1200);
+      if (onLoginSuccess) {
+        setTimeout(() => {
+          onLoginSuccess(displayName);
+        }, 900);
+      }
     } catch {
       setErrors({ loginPassword: "Network error. Make sure the backend is running." });
       setLoginLoading(false);
@@ -154,14 +154,14 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
     setRegisterLoading(true);
 
     try {
-      /*
-      Replace this temporary success with your real backend call later:
-
-      const response = await fetch("http://localhost:5000/api/register", {
+      // POST /api/auth/register takes only email + password — the User table has
+      // no name column — so registerName stays client-side for the greeting.
+      const response = await fetch(`${API_BASE}/api/auth/register`, {
         method: "POST",
+        // UC4 – without this the browser ignores the cross-origin Set-Cookie.
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: registerName,
           email: registerEmail,
           password: registerPassword,
         }),
@@ -170,18 +170,26 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
       const data = await response.json();
 
       if (!response.ok) {
+        // 409 = an account with that email already exists.
         setErrors({ registerEmail: data.error || "Registration failed." });
+        setRegisterLoading(false);
         return;
       }
-      */
 
-      setTimeout(() => {
-        setRegisterLoading(false);
-        showSuccess(
-          "Account created!",
-          `Welcome, ${registerName.split(" ")[0]}. Check your email to verify.`
-        );
-      }, 1400);
+      // Register sets the auth cookie as well as creating the row, so a new
+      // account is signed in immediately rather than bounced to the login tab.
+
+      setRegisterLoading(false);
+
+      const firstName = registerName.split(" ")[0];
+      // The previous copy promised a verification email; nothing sends one.
+      showSuccess("Account created!", `Welcome, ${firstName}.`);
+
+      if (onLoginSuccess) {
+        setTimeout(() => {
+          onLoginSuccess(firstName);
+        }, 900);
+      }
     } catch {
       setErrors({ registerEmail: "Network error. Make sure the backend is running." });
       setRegisterLoading(false);

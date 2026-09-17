@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Dashboard from '../components/Dashboard';
 import LoginPage from '../components/LoginPage';
 import AssignmentDetails from '../components/AssignmentDetails';
@@ -6,11 +6,14 @@ import CalendarView from '../components/CalendarView';
 import FocusMode from '../components/FocusMode';
 import Settings from '../components/Settings';
 import BottomNav from '../components/BottomNav';
+import AnalyticsView from '../components/analytics/AnalyticsView';
+import { Assignment, fetchAssignments } from '../lib/assignmentsApi';
+import { ApiError, logout } from '../lib/apiClient';
 
-type ViewType = 'assignments' | 'calendar' | 'focus' | 'profile' | 'auth';
+type ViewType = 'assignments' | 'calendar' | 'focus' | 'analytics' | 'profile' | 'auth';
 
 export default function App() {
-  const [selectedAssignment, setSelectedAssignment] = useState<number | null>(null);
+  const [selectedAssignment, setSelectedAssignment] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<ViewType>('auth');  const [focusModeEnabled, setFocusModeEnabled] = useState(false);
   const [blockedSites, setBlockedSites] = useState([
     'youtube.com',
@@ -20,9 +23,7 @@ export default function App() {
   ]);
 
   // Profile/Settings state
-  const [canvasApiKey, setCanvasApiKey] = useState('');
   const [aiApiKey, setAiApiKey] = useState('');
-  const [showCanvasKey, setShowCanvasKey] = useState(false);
   const [showAiKey, setShowAiKey] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(false);
@@ -33,36 +34,45 @@ export default function App() {
   const [smartScheduler, setSmartScheduler] = useState(false);
   const [assignmentDecomposition, setAssignmentDecomposition] = useState(false);
 
-  const assignments = [
-    {
-      id: 1,
-      title: 'Mathematics Homework',
-      dueDate: '2026-04-05',
-      priority: 'High',
-      description: 'Complete chapters 5-7 exercises on quadratic equations and graphing functions. Show all work and include graphs for problems 15-20.'
-    },
-    {
-      id: 2,
-      title: 'History Essay',
-      dueDate: '2026-04-08',
-      priority: 'Medium',
-      description: 'Write a 5-page essay analyzing the causes and effects of the Industrial Revolution. Include at least 3 primary sources and 5 secondary sources.'
-    },
-    {
-      id: 3,
-      title: 'Science Lab Report',
-      dueDate: '2026-04-10',
-      priority: 'Low',
-      description: 'Document the results of the chemistry experiment on acid-base reactions. Include hypothesis, methodology, observations, and conclusions.'
-    },
-    {
-      id: 4,
-      title: 'English Reading',
-      dueDate: '2026-04-06',
-      priority: 'High',
-      description: 'Read chapters 8-12 of "To Kill a Mockingbird" and prepare answers to the discussion questions provided in class.'
+  // Assignments come from the API: Canvas-synced rows, or demo rows in dev.
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [assignmentsLoading, setAssignmentsLoading] = useState(false);
+  const [assignmentsError, setAssignmentsError] = useState<string | null>(null);
+
+  const signOutLocally = useCallback(() => {
+    setSignedInUser(null);
+    setAssignments([]);
+    setSelectedAssignment(null);
+    setCurrentView('auth');
+  }, []);
+
+  const loadAssignments = useCallback(async () => {
+    setAssignmentsLoading(true);
+    setAssignmentsError(null);
+    try {
+      setAssignments(await fetchAssignments());
+    } catch (err) {
+      // The auth cookie expired or was revoked: back to the login screen.
+      if (err instanceof ApiError && err.status === 401) return signOutLocally();
+      setAssignmentsError(err instanceof ApiError ? err.message : 'Could not load assignments.');
+    } finally {
+      setAssignmentsLoading(false);
     }
-  ];
+  }, [signOutLocally]);
+
+  const signedIn = currentView !== 'auth';
+  useEffect(() => {
+    if (signedIn) loadAssignments();
+  }, [signedIn, loadAssignments]);
+
+  const handleLogout = async () => {
+    try {
+      await logout(); // revokes the JWT and clears the httpOnly cookie
+    } catch {
+      // Already signed out server-side; clear the UI regardless.
+    }
+    signOutLocally();
+  };
 
   const selectedAssignmentData = assignments.find(a => a.id === selectedAssignment);
 
@@ -91,10 +101,7 @@ export default function App() {
         </span>
 
     <button
-      onClick={() => {
-        setSignedInUser(null);
-        setCurrentView('auth');
-      }}
+      onClick={handleLogout}
       className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded-lg transition-colors"
     >
       Log Out
@@ -108,6 +115,9 @@ export default function App() {
         <Dashboard
           assignments={assignments}
           darkMode={darkMode}
+          isLoading={assignmentsLoading && assignments.length === 0}
+          error={assignmentsError}
+          onOpenSettings={() => setCurrentView('profile')}
           onSelectAssignment={setSelectedAssignment}
           getPriorityColor={getPriorityColor}
         />
@@ -117,6 +127,7 @@ export default function App() {
         <CalendarView
           darkMode={darkMode}
           assignments={assignments}
+          isLoading={assignmentsLoading && assignments.length === 0}
           onSelectAssignment={setSelectedAssignment}
         />
       )}
@@ -128,6 +139,16 @@ export default function App() {
           setFocusModeEnabled={setFocusModeEnabled}
           blockedSites={blockedSites}
           setBlockedSites={setBlockedSites}
+          assignments={assignments}
+          onAssignmentsChanged={loadAssignments}
+        />
+      )}
+
+      {currentView === 'analytics' && (
+        <AnalyticsView
+          darkMode={darkMode}
+          onStudyNow={() => setCurrentView('focus')}
+          onSignedOut={signOutLocally}
         />
       )}
 
@@ -142,12 +163,8 @@ export default function App() {
       {currentView === 'profile' && (
         <Settings
           darkMode={darkMode}
-          canvasApiKey={canvasApiKey}
-          setCanvasApiKey={setCanvasApiKey}
           aiApiKey={aiApiKey}
           setAiApiKey={setAiApiKey}
-          showCanvasKey={showCanvasKey}
-          setShowCanvasKey={setShowCanvasKey}
           showAiKey={showAiKey}
           setShowAiKey={setShowAiKey}
           emailNotifications={emailNotifications}
@@ -163,6 +180,7 @@ export default function App() {
           setSmartScheduler={setSmartScheduler}
           assignmentDecomposition={assignmentDecomposition}
           setAssignmentDecomposition={setAssignmentDecomposition}
+          onAssignmentsChanged={loadAssignments}
         />
       )}
 
@@ -181,6 +199,7 @@ export default function App() {
         darkMode={darkMode}
         onClose={() => setSelectedAssignment(null)}
         getPriorityColor={getPriorityColor}
+        onChanged={loadAssignments}
       />
     </div>
   );

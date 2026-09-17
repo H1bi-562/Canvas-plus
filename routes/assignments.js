@@ -8,6 +8,7 @@ const express = require('express');
 const pool    = require('../db');
 const auth    = require('../middleware/authMiddleware');
 const { calculateWarningDate } = require('../utils/dateUtils');
+const progress = require('../services/assignmentProgress');
 
 const router = express.Router();
 router.use(auth);
@@ -30,12 +31,33 @@ router.get('/', async (req, res) => {
         a."courseID",
         c.name         AS "courseName",
         c.department,
+        c."courseCode",
+        a."htmlURL",
+        a."canvasAssignmentID",
+        -- Demo rows come from services/demoData.js; the UI labels them.
+        (c."canvasBaseURL" = 'demo://canvas-plus') AS "isDemo",
         ad.summary,
         ad.subtasks,
-        ad."priorityScore"
+        ad."priorityScore",
+        -- UC21 inputs: the student's estimate, Canvas's submission, and "Mark done"
+        ad."estimatedMinutes",
+        ad."estimateSource",
+        a."submittedAt",
+        a."submissionState",
+        a.late,
+        a.missing,
+        a.excused,
+        a."completedAt",
+        COALESCE(logged.seconds, 0)::INTEGER AS "loggedSeconds"
       FROM "Assignment" a
       JOIN "Course" c ON c.id = a."courseID"
       LEFT JOIN "AssignmentDetail" ad ON ad."assignmentID" = a.id
+      -- Active study time from finished sessions on this assignment (UC24).
+      LEFT JOIN LATERAL (
+        SELECT SUM(s."durationSeconds") AS seconds
+          FROM "StudySession" s
+         WHERE s."assignmentID" = a.id AND s."userID" = a."userID" AND s.status = 'completed'
+      ) logged ON TRUE
       WHERE a."userID" = $1
     `;
     const params = [req.user.id];
@@ -48,7 +70,11 @@ router.get('/', async (req, res) => {
     query += ` ORDER BY a."dueAt" ASC NULLS LAST`;
 
     const result = await pool.query(query, params);
-    res.json(result.rows);
+    // One status combining Canvas's submission with the student's own "Mark done".
+    res.json(result.rows.map((row) => ({
+      ...row,
+      completionStatus: progress.completionStatus(row),
+    })));
 
   } catch (err) {
     console.error('Get assignments error:', err.message);
@@ -183,6 +209,36 @@ router.put('/:id/details', async (req, res) => {
   } catch (err) {
     console.error('Update assignment details error:', err.message);
     res.status(500).json({ error: 'Failed to save assignment details' });
+  }
+});
+
+// ── PATCH /api/assignments/:id/estimate ───────────────────────────────────
+// UC21 – the student's own time estimate. Body: { minutes } (whole minutes,
+// 1–6000), or { minutes: null } to clear it.
+router.patch('/:id/estimate', async (req, res) => {
+  try {
+    res.json(await progress.setEstimate(req.user.id, req.params.id, req.body?.minutes));
+  } catch (err) {
+    if (err instanceof progress.ProgressError) {
+      return res.status(err.status).json({ error: err.message });
+    }
+    console.error('Set estimate error:', err.message);
+    res.status(500).json({ error: 'Failed to save estimate' });
+  }
+});
+
+// ── PATCH /api/assignments/:id/completion ─────────────────────────────────
+// UC21 – "Mark done" for work Canvas does not track. Body: { completed: boolean }.
+// Canvas sync never overwrites this.
+router.patch('/:id/completion', async (req, res) => {
+  try {
+    res.json(await progress.setCompleted(req.user.id, req.params.id, req.body?.completed));
+  } catch (err) {
+    if (err instanceof progress.ProgressError) {
+      return res.status(err.status).json({ error: err.message });
+    }
+    console.error('Set completion error:', err.message);
+    res.status(500).json({ error: 'Failed to update completion' });
   }
 });
 
