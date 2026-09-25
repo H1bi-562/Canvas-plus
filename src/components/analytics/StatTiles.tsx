@@ -40,7 +40,7 @@ interface TileProps {
 
 function Tile({ label, value, note, darkMode, children }: TileProps) {
   return (
-    <div className={`rounded-lg shadow-sm p-4 ${darkMode ? 'bg-[#3a3a3a]' : 'bg-white'}`}>
+    <div className={`rounded-lg shadow-sm p-4 ${darkMode ? 'bg-[var(--cp-card)]' : 'bg-white'}`}>
       <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>{label}</div>
       {/* Wraps the sparkline below the value on narrow tiles instead of breaking "8h 15m". */}
       <div className="flex flex-wrap items-end justify-between gap-x-2 gap-y-1 mt-1">

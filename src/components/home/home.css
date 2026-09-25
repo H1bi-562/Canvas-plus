@@ -1,0 +1,32 @@
+/* UC22 – home grid styling on top of react-grid-layout's defaults. */
+
+/* The drop target shown while dragging or resizing. */
+.react-grid-item.react-grid-placeholder {
+  background: #2563eb; /* blue-600, the app's accent */
+  opacity: 0.18;
+  border-radius: 0.5rem;
+  transition-duration: 100ms;
+}
+
+/* Only animate once the grid is interactive; avoids a slide-in on first paint. */
+.react-grid-layout:not(.home-grid-editing) .react-grid-item {
+  transition: none;
+}
+
+.widget-editing {
+  outline: 2px dashed #93c5fd; /* blue-300 */
+  outline-offset: 2px;
+}
+.home-dark .widget-editing {
+  outline-color: #4b5563; /* gray-600 */
+}
+
+.react-grid-item.react-draggable-dragging {
+  z-index: 10;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* The default resize handle is a dark corner glyph; lighten it on dark mode. */
+.home-dark .react-grid-item > .react-resizable-handle::after {
+  border-color: rgba(255, 255, 255, 0.6);
+}

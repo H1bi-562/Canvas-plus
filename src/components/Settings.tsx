@@ -75,14 +75,14 @@ export default function Settings({
         <h1 className="text-white text-xl font-medium">Settings</h1>
       </div>
 
-      <div className={`px-6 py-6 min-h-full ${darkMode ? 'bg-[#2d2d2d]' : 'bg-gray-50'}`}>
+      <div className={`px-6 py-6 min-h-full ${darkMode ? 'bg-[var(--cp-page)]' : 'bg-gray-50'}`}>
         <div className="max-w-3xl mx-auto space-y-6">
 
           {/* Canvas Integration — token connect, sync, and dev-only demo data */}
           <CanvasConnection darkMode={darkMode} onAssignmentsChanged={onAssignmentsChanged} />
 
           {/* Google Integration */}
-          <div className={`rounded-lg shadow-sm p-6 ${darkMode ? 'bg-[#3a3a3a]' : 'bg-white'}`}>
+          <div className={`rounded-lg shadow-sm p-6 ${darkMode ? 'bg-[var(--cp-card)]' : 'bg-white'}`}>
             <h2 className={`font-semibold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Google Integration</h2>
             <p className={`text-sm mb-4 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Connect your Google account to sync calendars and assignments</p>
             <button className="bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-6 rounded-lg transition-colors">
@@ -91,7 +91,7 @@ export default function Settings({
           </div>
 
           {/* AI Integration */}
-          <div className={`rounded-lg shadow-sm p-6 ${darkMode ? 'bg-[#3a3a3a]' : 'bg-white'}`}>
+          <div className={`rounded-lg shadow-sm p-6 ${darkMode ? 'bg-[var(--cp-card)]' : 'bg-white'}`}>
             <h2 className={`font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>AI Integration</h2>
             <div>
               <label className={`block text-sm mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>AI API Key</label>
@@ -102,7 +102,7 @@ export default function Settings({
                   onChange={(e) => setAiApiKey(e.target.value)}
                   placeholder="Enter your AI API key"
                   className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10 ${
-                    darkMode ? 'bg-[#2d2d2d] border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'
+                    darkMode ? 'bg-[var(--cp-page)] border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'
                   }`}
                 />
                 <button
@@ -116,7 +116,7 @@ export default function Settings({
           </div>
 
           {/* App Config */}
-          <div className={`rounded-lg shadow-sm p-6 ${darkMode ? 'bg-[#3a3a3a]' : 'bg-white'}`}>
+          <div className={`rounded-lg shadow-sm p-6 ${darkMode ? 'bg-[var(--cp-card)]' : 'bg-white'}`}>
             <h2 className={`font-semibold mb-5 ${darkMode ? 'text-white' : 'text-gray-900'}`}>CanvasPlus Settings</h2>
 
             {/* --- Assignment Due Warning --- */}
@@ -147,7 +147,7 @@ export default function Settings({
                   onChange={(e) => setDueWarningTimeframe(e.target.value)}
                   className={`text-sm px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     darkMode
-                      ? 'bg-[#2d2d2d] border-gray-600 text-white'
+                      ? 'bg-[var(--cp-page)] border-gray-600 text-white'
                       : 'bg-white border-gray-300 text-gray-900'
                   }`}
                 >
@@ -193,7 +193,7 @@ export default function Settings({
           </div>
 
           {/* Preferences */}
-          <div className={`rounded-lg shadow-sm p-6 ${darkMode ? 'bg-[#3a3a3a]' : 'bg-white'}`}>
+          <div className={`rounded-lg shadow-sm p-6 ${darkMode ? 'bg-[var(--cp-card)]' : 'bg-white'}`}>
             <h2 className={`font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Preferences</h2>
             <div className="space-y-4">
               <div className="flex items-center justify-between">

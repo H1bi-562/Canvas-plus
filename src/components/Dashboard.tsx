@@ -12,6 +12,8 @@ interface DashboardProps {
   /** Shown instead of the list when loading assignments failed. */
   error?: string | null;
   onOpenSettings?: () => void;
+  /** Rendered inside a home-screen widget (UC22): the widget supplies the padding and scroll. */
+  embedded?: boolean;
 }
 
 export default function Dashboard({
@@ -22,13 +24,15 @@ export default function Dashboard({
   getPriorityColor,
   error = null,
   onOpenSettings,
+  embedded = false,
 }: DashboardProps) {
   const muted = darkMode ? 'text-gray-300' : 'text-gray-600';
+  const frame = embedded ? 'h-full overflow-y-auto p-2' : 'flex-1 overflow-y-auto px-4 py-6';
 
   if (!isLoading && (error || assignments.length === 0)) {
     return (
-      <div className="flex-1 overflow-y-auto px-4 py-6">
-        <div className={`rounded-lg shadow-sm p-6 max-w-md mx-auto text-center ${darkMode ? 'bg-[#3a3a3a]' : 'bg-white'}`}>
+      <div className={frame}>
+        <div className={`rounded-lg shadow-sm p-6 max-w-md mx-auto text-center ${darkMode ? 'bg-[var(--cp-card)]' : 'bg-white'}`}>
           <h2 className={`text-lg font-medium mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
             {error ? 'Could not load assignments' : 'No assignments yet'}
           </h2>
@@ -51,7 +55,7 @@ export default function Dashboard({
 
   return (
     <div
-      className="flex-1 overflow-y-auto px-4 py-6"
+      className={frame}
       aria-busy={isLoading}
       aria-label={isLoading ? 'Loading assignments' : 'Assignments'}
     >
@@ -60,7 +64,7 @@ export default function Dashboard({
           ? Array.from({ length: 4 }, (_, index) => (
               <div
                 key={index}
-                className={`rounded-lg shadow-sm p-3 w-80 mx-auto ${darkMode ? 'bg-[#3a3a3a]' : 'bg-white'}`}
+                className={`rounded-lg shadow-sm p-3 w-80 mx-auto ${darkMode ? 'bg-[var(--cp-card)]' : 'bg-white'}`}
               >
                 <Skeleton className={`h-7 w-3/4 mb-3 ${darkMode ? 'bg-gray-600' : 'bg-gray-200'}`} />
                 <div className="space-y-3 mb-3">
@@ -85,7 +89,7 @@ export default function Dashboard({
           : assignments.map((assignment) => (
           <div
             key={assignment.id}
-            className={`rounded-lg shadow-sm p-3 w-80 mx-auto ${darkMode ? 'bg-[#3a3a3a]' : 'bg-white'}`}
+            className={`rounded-lg shadow-sm p-3 w-80 mx-auto ${darkMode ? 'bg-[var(--cp-card)]' : 'bg-white'}`}
           >
             <div className="flex items-center gap-2 mb-1">
               {assignment.courseCode && (

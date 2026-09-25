@@ -27,7 +27,7 @@ export default function AtRiskList({ summary, darkMode, onStudyNow }: AtRiskList
   const ink = darkMode ? 'text-white' : 'text-gray-900';
 
   return (
-    <section className={`rounded-lg shadow-sm p-5 ${darkMode ? 'bg-[#3a3a3a]' : 'bg-white'}`} aria-labelledby="at-risk-title">
+    <section className={`rounded-lg shadow-sm p-5 ${darkMode ? 'bg-[var(--cp-card)]' : 'bg-white'}`} aria-labelledby="at-risk-title">
       <div className="flex items-center justify-between gap-3 mb-3">
         <h3 id="at-risk-title" className={`font-semibold ${ink}`}>At risk in the next 72 hours</h3>
         {items.length > 0 && onStudyNow && (

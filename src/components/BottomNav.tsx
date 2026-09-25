@@ -12,7 +12,7 @@ export default function BottomNav({ currentView, darkMode, onViewChange }: Botto
   if (currentView === 'auth') return null;
 
   return (
-    <div className={`border-t px-6 py-3 shadow-sm ${darkMode ? 'bg-[#3a3a3a] border-gray-700' : 'bg-white border-gray-200'}`}>
+    <div className={`border-t px-6 py-3 shadow-sm ${darkMode ? 'bg-[var(--cp-card)] border-gray-700' : 'bg-white border-gray-200'}`}>
       <div className="max-w-md mx-auto flex justify-around">
         <button
           onClick={() => onViewChange('assignments')}

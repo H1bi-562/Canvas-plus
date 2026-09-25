@@ -1,0 +1,149 @@
+/*
+ * UC22 – colour themes, concise takes on five VS Code themes.
+ *
+ * Components are written against Tailwind's palette (bg-white, text-gray-900,
+ * bg-blue-600, ...) plus three app surfaces for dark mode (--cp-page, --cp-card,
+ * --cp-raised). Tailwind v4 reads every colour through a CSS variable, so a
+ * theme only has to redefine those variables; no component knows which theme
+ * is on. Each theme also sets its mode in src/lib/themes.ts, which picks the
+ * light or dark branch of the components' `darkMode ? … : …` classes, so a
+ * light theme only needs the shades the light branch uses and vice versa.
+ *
+ * The selector is [data-theme] rather than :root[data-theme] so the theme
+ * picker can preview a theme on a single swatch element.
+ *
+ * Accent (blue-600) is darkened where needed so the button label keeps at
+ * least ~4.5:1 contrast on it.
+ */
+
+/* Original dark surfaces, used when no theme is set (e.g. the login page). */
+:root {
+  --cp-page: #2d2d2d;
+  --cp-card: #3a3a3a;
+  --cp-raised: #454545;
+  --cp-ink: #111827;
+  --cp-accent: #2563eb;
+}
+
+html[data-theme] body {
+  background: var(--cp-page);
+}
+
+/* ── Light Modern (VS Code's default light) ─────────────────────────────── */
+[data-theme='light-modern'] {
+  --cp-page: #f8f8f8;
+  --cp-card: #ffffff;
+  --cp-raised: #f0f0f0;
+  --cp-ink: #1f1f1f;
+  --cp-accent: #005fb8;
+
+  --color-white: #ffffff;
+  --color-gray-50: #f8f8f8;
+  --color-gray-100: #f0f0f0;
+  --color-gray-200: #e5e5e5;
+  --color-gray-300: #cecece;
+  --color-gray-400: #8b8b8b;
+  --color-gray-500: #767676;
+  --color-gray-600: #616161;
+  --color-gray-700: #3b3b3b;
+  --color-gray-900: #1f1f1f;
+  --color-blue-50: #eaf3fc;
+  --color-blue-100: #d5e7f9;
+  --color-blue-500: #0078d4;
+  --color-blue-600: #005fb8;
+  --color-blue-700: #004f99;
+}
+
+/* ── Dark Modern (VS Code's default dark) ───────────────────────────────── */
+[data-theme='dark-modern'] {
+  --cp-page: #181818;
+  --cp-card: #1f1f1f;
+  --cp-raised: #2b2b2b;
+  --cp-ink: #e7e7e7;
+  --cp-accent: #0078d4;
+
+  --color-white: #e7e7e7;
+  --color-gray-200: #cccccc;
+  --color-gray-300: #b5b5b5;
+  --color-gray-400: #9d9d9d;
+  --color-gray-500: #8b8b8b;
+  --color-gray-600: #3c3c3c;
+  --color-gray-700: #2b2b2b;
+  --color-blue-300: #75beff;
+  --color-blue-400: #4daafc;
+  --color-blue-500: #0078d4;
+  --color-blue-600: #0068b8;
+  --color-blue-700: #005a9e;
+  --color-blue-900: #0b3a66;
+}
+
+/* ── Monokai ────────────────────────────────────────────────────────────── */
+[data-theme='monokai'] {
+  --cp-page: #1e1f1c;
+  --cp-card: #272822;
+  --cp-raised: #3e3d32;
+  --cp-ink: #f8f8f2;
+  --cp-accent: #f92672;
+
+  --color-white: #f8f8f2;
+  --color-gray-200: #e6e6dc;
+  --color-gray-300: #cfcfc2;
+  --color-gray-400: #a59f85;
+  --color-gray-500: #90908a;
+  --color-gray-600: #49483e;
+  --color-gray-700: #3e3d32;
+  --color-blue-300: #a6e22e;
+  --color-blue-400: #66d9ef;
+  --color-blue-500: #f92672;
+  --color-blue-600: #c4185a;
+  --color-blue-700: #a3124a;
+  --color-blue-900: #4a1330;
+}
+
+/* ── Solarized Light ────────────────────────────────────────────────────── */
+[data-theme='solarized-light'] {
+  --cp-page: #eee8d5;
+  --cp-card: #fdf6e3;
+  --cp-raised: #eee8d5;
+  --cp-ink: #073642;
+  --cp-accent: #268bd2;
+
+  --color-white: #fdf6e3;
+  --color-gray-50: #eee8d5;
+  --color-gray-100: #eee8d5;
+  --color-gray-200: #e4ddc8;
+  --color-gray-300: #d3cbb7;
+  --color-gray-400: #93a1a1;
+  --color-gray-500: #839496;
+  --color-gray-600: #657b83;
+  --color-gray-700: #586e75;
+  --color-gray-900: #073642;
+  --color-blue-50: #e8eee9;
+  --color-blue-100: #d6e4e6;
+  --color-blue-500: #268bd2;
+  --color-blue-600: #1f6fa8;
+  --color-blue-700: #185a8a;
+}
+
+/* ── Dracula ────────────────────────────────────────────────────────────── */
+[data-theme='dracula'] {
+  --cp-page: #21222c;
+  --cp-card: #282a36;
+  --cp-raised: #343746;
+  --cp-ink: #f8f8f2;
+  --cp-accent: #bd93f9;
+
+  --color-white: #f8f8f2;
+  --color-gray-200: #e2e2dc;
+  --color-gray-300: #c9cbd8;
+  --color-gray-400: #a3a8c3;
+  --color-gray-500: #8a8fb0;
+  --color-gray-600: #44475a;
+  --color-gray-700: #343746;
+  --color-blue-300: #caa9fa;
+  --color-blue-400: #bd93f9;
+  --color-blue-500: #bd93f9;
+  --color-blue-600: #7458c0;
+  --color-blue-700: #6247a8;
+  --color-blue-900: #3b2e5a;
+}
