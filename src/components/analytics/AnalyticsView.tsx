@@ -97,7 +97,7 @@ export default function AnalyticsView({ darkMode, onStudyNow, onSignedOut }: Ana
                 className={`inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full border transition-colors ${
                   selected
                     ? (darkMode ? 'border-gray-300 text-white font-semibold' : 'border-gray-900 text-gray-900 font-semibold')
-                    : (darkMode ? 'border-gray-600 text-gray-300 hover:bg-[#3a3a3a]' : 'border-gray-300 text-gray-600 hover:bg-gray-100')
+                    : (darkMode ? 'border-gray-600 text-gray-300 hover:bg-[var(--cp-card)]' : 'border-gray-300 text-gray-600 hover:bg-gray-100')
                 }`}
               >
                 {selected && <Check className="w-4 h-4" strokeWidth={3} aria-hidden="true" />}

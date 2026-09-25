@@ -185,7 +185,7 @@ export default function StudyTimer({
     session && run(() => endSession(session.id), (ended) => onSessionEnd?.(ended));
 
   // ── Styling ─────────────────────────────────────────────────────────────
-  const card    = darkMode ? 'bg-[#3a3a3a]' : 'bg-white';
+  const card    = darkMode ? 'bg-[var(--cp-card)]' : 'bg-white';
   const heading = darkMode ? 'text-white' : 'text-gray-900';
   const muted   = darkMode ? 'text-gray-300' : 'text-gray-600';
 

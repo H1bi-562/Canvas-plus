@@ -104,15 +104,15 @@ export default function CanvasConnection({ darkMode, onAssignmentsChanged }: Can
   });
 
   // ── Styling (matches Settings.tsx) ──────────────────────────────────────
-  const card    = `rounded-lg shadow-sm p-6 ${darkMode ? 'bg-[#3a3a3a]' : 'bg-white'}`;
+  const card    = `rounded-lg shadow-sm p-6 ${darkMode ? 'bg-[var(--cp-card)]' : 'bg-white'}`;
   const heading = `font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`;
   const muted   = `text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`;
   const input   = `w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10 ${
-    darkMode ? 'bg-[#2d2d2d] border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'
+    darkMode ? 'bg-[var(--cp-page)] border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'
   }`;
   const primary   = 'inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
   const secondary = `inline-flex items-center gap-2 py-2.5 px-5 rounded-lg border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-    darkMode ? 'border-gray-600 text-gray-200 hover:bg-[#2d2d2d]' : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+    darkMode ? 'border-gray-600 text-gray-200 hover:bg-[var(--cp-page)]' : 'border-gray-300 text-gray-700 hover:bg-gray-50'
   }`;
   const spinner = <Loader2 className="w-4 h-4 animate-spin" />;
 

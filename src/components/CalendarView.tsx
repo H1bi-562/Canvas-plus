@@ -69,11 +69,11 @@ export default function CalendarView({
         <h2 className={`text-xl font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>{monthLabel}</h2>
 
         {/* Calendar Grid */}
-        <div className={`rounded-lg shadow-sm overflow-hidden mb-6 ${darkMode ? 'bg-[#3a3a3a]' : 'bg-white'}`}>
+        <div className={`rounded-lg shadow-sm overflow-hidden mb-6 ${darkMode ? 'bg-[var(--cp-card)]' : 'bg-white'}`}>
           {/* Week day headers */}
           <div className={`grid grid-cols-7 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
             {weekDays.map(day => (
-              <div key={day} className={`p-3 text-center text-sm font-medium ${darkMode ? 'text-gray-300 bg-[#404040]' : 'text-gray-700 bg-gray-50'}`}>
+              <div key={day} className={`p-3 text-center text-sm font-medium ${darkMode ? 'text-gray-300 bg-[var(--cp-raised)]' : 'text-gray-700 bg-gray-50'}`}>
                 {day}
               </div>
             ))}
@@ -89,7 +89,7 @@ export default function CalendarView({
                 <div
                   key={index}
                   className={`min-h-28 p-2 border-r border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} ${
-                    day ? (darkMode ? 'bg-[#3a3a3a]' : 'bg-white') : (darkMode ? 'bg-[#2d2d2d]' : 'bg-gray-50')
+                    day ? (darkMode ? 'bg-[var(--cp-card)]' : 'bg-white') : (darkMode ? 'bg-[var(--cp-page)]' : 'bg-gray-50')
                   } ${isToday ? (darkMode ? 'bg-blue-900/30' : 'bg-blue-50') : ''}`}
                 >
                   {day && (

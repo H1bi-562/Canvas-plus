@@ -29,8 +29,10 @@ export interface VizTheme {
 
 const STATUS = { good: '#0ca30c', warning: '#fab219', critical: '#d03b3b' };
 
+// surface follows the colour theme (src/styles/themes.css): it is only used to
+// knock marks out from the card behind them.
 export const LIGHT: VizTheme = {
-  surface: '#ffffff',
+  surface: 'var(--cp-card)',
   inkPrimary: '#0b0b0b',
   inkSecondary: '#52514e',
   inkMuted: '#6f6e69',
@@ -47,7 +49,7 @@ export const LIGHT: VizTheme = {
 // The app's dark cards are #3a3a3a (lighter than the reference #1a1a19), so the
 // muted ink and chrome are stepped up to stay legible on that surface.
 export const DARK: VizTheme = {
-  surface: '#3a3a3a',
+  surface: 'var(--cp-card)',
   inkPrimary: '#ffffff',
   inkSecondary: '#d6d5cc',
   inkMuted: '#b0afa8',

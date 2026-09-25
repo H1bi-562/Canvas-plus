@@ -55,7 +55,7 @@ export default function EstimateEditor({
       active
         ? 'bg-blue-600 border-blue-600 text-white'
         : darkMode
-          ? 'border-gray-600 text-gray-200 hover:bg-[#2d2d2d]'
+          ? 'border-gray-600 text-gray-200 hover:bg-[var(--cp-page)]'
           : 'border-gray-300 text-gray-700 hover:bg-gray-50'
     }`;
 
@@ -92,7 +92,7 @@ export default function EstimateEditor({
             placeholder="min"
             aria-label="Custom estimate in minutes"
             className={`w-20 text-sm px-2 py-1.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              darkMode ? 'bg-[#2d2d2d] border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+              darkMode ? 'bg-[var(--cp-page)] border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
             }`}
           />
           <button

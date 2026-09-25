@@ -61,10 +61,10 @@ export default function AssignmentDetails({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className={`rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto ${darkMode ? 'bg-[#3a3a3a]' : 'bg-white'}`}>
+      <div className={`rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto ${darkMode ? 'bg-[var(--cp-card)]' : 'bg-white'}`}>
         {/* Panel Header */}
         <div className={`sticky top-0 border-b px-6 py-4 flex items-center justify-between ${
-          darkMode ? 'bg-[#3a3a3a] border-gray-700' : 'bg-white border-gray-200'
+          darkMode ? 'bg-[var(--cp-card)] border-gray-700' : 'bg-white border-gray-200'
         }`}>
           <div>
             <h2 className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -102,7 +102,7 @@ export default function AssignmentDetails({
             </div>
 
             {/* Progress: estimate vs. time actually logged (UC21) */}
-            <div className={`rounded-lg p-4 space-y-4 ${darkMode ? 'bg-[#2d2d2d]' : 'bg-gray-50'}`}>
+            <div className={`rounded-lg p-4 space-y-4 ${darkMode ? 'bg-[var(--cp-page)]' : 'bg-gray-50'}`}>
               <div>
                 <div className="flex items-baseline justify-between mb-1.5">
                   <h3 className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Study time</h3>
@@ -158,7 +158,7 @@ export default function AssignmentDetails({
                     disabled={savingDone}
                     className={`shrink-0 inline-flex items-center gap-2 text-sm py-2 px-4 rounded-lg transition-colors disabled:opacity-50 ${
                       markedDone
-                        ? (darkMode ? 'border border-gray-600 text-gray-200 hover:bg-[#3a3a3a]' : 'border border-gray-300 text-gray-700 hover:bg-white')
+                        ? (darkMode ? 'border border-gray-600 text-gray-200 hover:bg-[var(--cp-card)]' : 'border border-gray-300 text-gray-700 hover:bg-white')
                         : 'bg-green-600 hover:bg-green-700 text-white'
                     }`}
                   >

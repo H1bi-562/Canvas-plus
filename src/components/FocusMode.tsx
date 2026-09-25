@@ -62,7 +62,7 @@ export default function FocusMode({
         {/* Study session timer (UC24) — tracks time on the server so it
             survives the popup closing or the service worker being evicted. */}
         <div className="mb-6">
-          <div className={`rounded-lg shadow-sm p-4 mb-3 ${darkMode ? 'bg-[#3a3a3a]' : 'bg-white'}`}>
+          <div className={`rounded-lg shadow-sm p-4 mb-3 ${darkMode ? 'bg-[var(--cp-card)]' : 'bg-white'}`}>
             <label
               htmlFor="focus-assignment"
               className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}
@@ -75,7 +75,7 @@ export default function FocusMode({
               onChange={(e) => setSelectedID(e.target.value)}
               disabled={locked}
               className={`w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-70 ${
-                darkMode ? 'bg-[#2d2d2d] border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                darkMode ? 'bg-[var(--cp-page)] border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
               }`}
             >
               <option value="">General study (no assignment)</option>
@@ -116,7 +116,7 @@ export default function FocusMode({
         </div>
 
         {/* Focus Mode Toggle */}
-        <div className={`rounded-lg shadow-sm p-6 mb-6 ${darkMode ? 'bg-[#3a3a3a]' : 'bg-white'}`}>
+        <div className={`rounded-lg shadow-sm p-6 mb-6 ${darkMode ? 'bg-[var(--cp-card)]' : 'bg-white'}`}>
           <div className="flex items-center justify-between">
             <div>
               <h3 className={`font-semibold mb-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Focus Mode</h3>
@@ -138,13 +138,13 @@ export default function FocusMode({
         </div>
 
         {/* Blocked Sites List */}
-        <div className={`rounded-lg shadow-sm p-6 mb-6 ${darkMode ? 'bg-[#3a3a3a]' : 'bg-white'}`}>
+        <div className={`rounded-lg shadow-sm p-6 mb-6 ${darkMode ? 'bg-[var(--cp-card)]' : 'bg-white'}`}>
           <h3 className={`font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Blocked Sites</h3>
           <div className="space-y-2">
             {blockedSites.map((site, index) => (
               <div
                 key={index}
-                className={`flex items-center justify-between p-3 rounded-lg ${darkMode ? 'bg-[#2d2d2d]' : 'bg-gray-50'}`}
+                className={`flex items-center justify-between p-3 rounded-lg ${darkMode ? 'bg-[var(--cp-page)]' : 'bg-gray-50'}`}
               >
                 <div className="flex items-center gap-3">
                   <Shield className="w-5 h-5 text-red-600" />
@@ -166,7 +166,7 @@ export default function FocusMode({
               type="text"
               placeholder="Add website to block..."
               className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                darkMode ? 'bg-[#2d2d2d] border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'
+                darkMode ? 'bg-[var(--cp-page)] border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'
               }`}
               onKeyPress={(e) => {
                 if (e.key === 'Enter' && e.currentTarget.value) {

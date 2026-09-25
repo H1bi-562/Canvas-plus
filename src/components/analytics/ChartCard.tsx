@@ -28,7 +28,7 @@ export default function ChartCard({ title, subtitle, darkMode, empty, table, chi
   const canToggle = Boolean(table) && !empty;
 
   return (
-    <figure className={`rounded-lg shadow-sm p-5 m-0 ${darkMode ? 'bg-[#3a3a3a]' : 'bg-white'} ${className}`}>
+    <figure className={`rounded-lg shadow-sm p-5 m-0 ${darkMode ? 'bg-[var(--cp-card)]' : 'bg-white'} ${className}`}>
       <figcaption className="flex items-start justify-between gap-3 mb-4">
         <div>
           <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{title}</h3>
@@ -39,7 +39,7 @@ export default function ChartCard({ title, subtitle, darkMode, empty, table, chi
             type="button"
             onClick={() => setShowTable(!showTable)}
             className={`shrink-0 inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md border transition-colors ${
-              darkMode ? 'border-gray-600 text-gray-200 hover:bg-[#2d2d2d]' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+              darkMode ? 'border-gray-600 text-gray-200 hover:bg-[var(--cp-page)]' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
             }`}
             aria-pressed={showTable}
           >

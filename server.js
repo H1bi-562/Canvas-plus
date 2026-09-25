@@ -56,6 +56,7 @@ app.use('/api/calendar',    calendarRoutes);
 app.use('/api/sessions',    sessionRoutes);
 app.use('/api/canvas',      canvasRoutes);
 app.use('/api/analytics',   require('./routes/analytics'));
+app.use('/api/layout',      require('./routes/layout'));
 
 // Demo data for previewing the UI without Canvas access. Never in production:
 // it writes fake coursework into the real database.
@@ -76,5 +77,5 @@ app.use((req, res) => {
 // ── Start ─────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`\n🚀 CanvasPlus API running on http://localhost:${PORT}`);
-  console.log(`   Routes: /api/auth  /api/config  /api/assignments  /api/calendar  /api/sessions  /api/canvas  /api/analytics\n`);
+  console.log(`   Routes: /api/auth  /api/config  /api/assignments  /api/calendar  /api/sessions  /api/canvas  /api/analytics  /api/layout\n`);
 });

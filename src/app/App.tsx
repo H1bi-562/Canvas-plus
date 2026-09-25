@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import Dashboard from '../components/Dashboard';
+import HomeView from '../components/home/HomeView';
 import LoginPage from '../components/LoginPage';
 import AssignmentDetails from '../components/AssignmentDetails';
 import CalendarView from '../components/CalendarView';
@@ -9,6 +9,8 @@ import BottomNav from '../components/BottomNav';
 import AnalyticsView from '../components/analytics/AnalyticsView';
 import { Assignment, fetchAssignments } from '../lib/assignmentsApi';
 import { ApiError, logout } from '../lib/apiClient';
+import { fetchLayout, saveTheme } from '../lib/layoutApi';
+import { DEFAULT_THEME, getTheme, type ThemeId } from '../lib/themes';
 
 type ViewType = 'assignments' | 'calendar' | 'focus' | 'analytics' | 'profile' | 'auth';
 
@@ -27,7 +29,10 @@ export default function App() {
   const [showAiKey, setShowAiKey] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
+  // UC22 – colour theme. darkMode follows the theme, so every component's
+  // existing light/dark classes keep working; themes.css recolours both.
+  const [themeId, setThemeId] = useState<ThemeId>(DEFAULT_THEME);
+  const darkMode = getTheme(themeId).mode === 'dark';
   const [signedInUser, setSignedInUser] = useState<string | null>(null);
   const [assignmentDueWarning, setAssignmentDueWarning] = useState(false);
   const [dueWarningTimeframe, setDueWarningTimeframe] = useState('24');
@@ -43,6 +48,7 @@ export default function App() {
     setSignedInUser(null);
     setAssignments([]);
     setSelectedAssignment(null);
+    setThemeId(DEFAULT_THEME); // the next student on this machine starts fresh
     setCurrentView('auth');
   }, []);
 
@@ -64,6 +70,27 @@ export default function App() {
   useEffect(() => {
     if (signedIn) loadAssignments();
   }, [signedIn, loadAssignments]);
+
+  // The saved theme. A failure just leaves the default; HomeView reports
+  // problems with the same endpoint.
+  useEffect(() => {
+    if (!signedIn) return;
+    fetchLayout().then((res) => setThemeId(getTheme(res.theme).id)).catch(() => {});
+  }, [signedIn]);
+
+  // On <html>, not the app root, so dialogs portalled to <body> are themed too.
+  useEffect(() => {
+    document.documentElement.dataset.theme = themeId;
+  }, [themeId]);
+
+  /** Apply at once (like VS Code's theme picker) and save in the background. */
+  const changeTheme = useCallback((id: ThemeId) => {
+    setThemeId(id);
+    saveTheme(id).catch((err) => {
+      if (err instanceof ApiError && err.status === 401) signOutLocally();
+      else console.error('Could not save theme:', err);
+    });
+  }, [signOutLocally]);
 
   const handleLogout = async () => {
     try {
@@ -90,9 +117,9 @@ export default function App() {
   };
 
   return (
-    <div className={`size-full flex flex-col ${darkMode ? 'bg-[#2d2d2d]' : 'bg-gray-50'}`}>
+    <div className={`size-full flex flex-col ${darkMode ? 'bg-[var(--cp-page)]' : 'bg-gray-50'}`}>
       {/* Top Bar */}
-      <div className={`shadow-sm px-6 py-4 flex items-center justify-between ${darkMode ? 'bg-[#3a3a3a]' : 'bg-white'}`}>
+      <div className={`shadow-sm px-6 py-4 flex items-center justify-between ${darkMode ? 'bg-[var(--cp-card)]' : 'bg-white'}`}>
         <h1 className={`text-2xl font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>CanvasPlus</h1>
         {currentView !== 'auth' && (
         <div className="flex items-center gap-4">
@@ -112,14 +139,19 @@ export default function App() {
 
       {/* Main Content */}
       {currentView === 'assignments' && (
-        <Dashboard
-          assignments={assignments}
+        <HomeView
           darkMode={darkMode}
-          isLoading={assignmentsLoading && assignments.length === 0}
-          error={assignmentsError}
-          onOpenSettings={() => setCurrentView('profile')}
+          assignments={assignments}
+          assignmentsLoading={assignmentsLoading}
+          assignmentsError={assignmentsError}
           onSelectAssignment={setSelectedAssignment}
           getPriorityColor={getPriorityColor}
+          onOpenSettings={() => setCurrentView('profile')}
+          onStudyNow={() => setCurrentView('focus')}
+          onAssignmentsChanged={loadAssignments}
+          onSignedOut={signOutLocally}
+          themeId={themeId}
+          onThemeChange={changeTheme}
         />
       )}
 
@@ -171,7 +203,7 @@ export default function App() {
           setEmailNotifications={setEmailNotifications}
           pushNotifications={pushNotifications}
           setPushNotifications={setPushNotifications}
-          setDarkMode={setDarkMode}
+          setDarkMode={(on: boolean) => changeTheme(on ? 'dark-modern' : 'light-modern')}
           assignmentDueWarning={assignmentDueWarning}
           setAssignmentDueWarning={setAssignmentDueWarning}
           dueWarningTimeframe={dueWarningTimeframe}
