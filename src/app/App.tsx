@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import HomeView from '../components/home/HomeView';
 import LoginPage from '../components/LoginPage';
 import AssignmentDetails from '../components/AssignmentDetails';
 import CalendarView from '../components/CalendarView';
 import FocusMode from '../components/FocusMode';
+import FocusWarning from '../components/FocusWarning';
 import Settings from '../components/Settings';
 import BottomNav from '../components/BottomNav';
 import AnalyticsView from '../components/analytics/AnalyticsView';
@@ -17,6 +18,29 @@ type ViewType = 'assignments' | 'calendar' | 'focus' | 'analytics' | 'profile' |
 export default function App() {
   const [selectedAssignment, setSelectedAssignment] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<ViewType>('auth');  const [focusModeEnabled, setFocusModeEnabled] = useState(false);
+  const [showFocusWarning, setShowFocusWarning] = useState(false);
+  const leftStudyTab = useRef(false);
+  useEffect(() => {
+  if (!focusModeEnabled) {
+    setShowFocusWarning(false);
+    return;
+  }
+
+  const handleVisibilityChange = () => {
+    if (document.hidden) {
+      leftStudyTab.current = true;
+    } else if (leftStudyTab.current) {
+      leftStudyTab.current = false;
+      setShowFocusWarning(true);
+    }
+  };
+
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+
+  return () => {
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+  };
+}, [focusModeEnabled]);
   const [blockedSites, setBlockedSites] = useState([
     'youtube.com',
     'discord.com',
@@ -91,6 +115,8 @@ export default function App() {
       else console.error('Could not save theme:', err);
     });
   }, [signOutLocally]);
+
+
 
   const handleLogout = async () => {
     try {
@@ -174,6 +200,14 @@ export default function App() {
           assignments={assignments}
           onAssignmentsChanged={loadAssignments}
         />
+      )}
+
+      {showFocusWarning && (
+       <FocusWarning
+         darkMode={darkMode}
+         blockedSites={blockedSites}
+         onDismiss={() => setShowFocusWarning(false)}
+  />
       )}
 
       {currentView === 'analytics' && (
