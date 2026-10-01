@@ -1,0 +1,6 @@
+@import "@canvasplus/tailwindcss/base.css";
+@import "../styles/theme.css";
+@import "../styles/themes.css";
+@source "../**/*.{js,ts,jsx,tsx}";
+
+html, body { height: 100%; }
