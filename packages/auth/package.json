@@ -1,0 +1,30 @@
+{
+  "name": "@canvasplus/auth",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    "./server": "./src/server.ts",
+    "./client": "./src/client.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --exclude '**/*.integration.test.*'",
+    "test:integration": "vitest run --config vitest.integration.config.ts"
+  },
+  "dependencies": {
+    "@canvasplus/database": "workspace:*",
+    "better-auth": "1.7.7",
+    "@better-auth/drizzle-adapter": "1.7.7",
+    "drizzle-orm": "^0.45.3"
+  },
+  "devDependencies": {
+    "@canvasplus/eslint": "workspace:*",
+    "@canvasplus/vitest": "workspace:*",
+    "typescript": "^5.9.3",
+    "@types/node": "^24.0.0",
+    "eslint": "^9.39.0",
+    "vitest": "^5.0.3"
+  }
+}
