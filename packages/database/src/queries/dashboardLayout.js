@@ -11,12 +11,12 @@
 // from THEMES). A theme applies the moment it is picked, so it is saved on its
 // own rather than with the layout's Save button.
 
-const pool = require('../db');
+import { pool } from "../client";
 
 class LayoutError extends Error {
   constructor(message, status = 500) {
     super(message);
-    this.name = 'LayoutError';
+    this.name = "LayoutError";
     this.status = status;
   }
 }
@@ -27,31 +27,31 @@ const MAX_ROWS = 40;
 
 // Minimum sizes keep a widget readable; the client uses the same numbers.
 const WIDGETS = {
-  'upcoming-assignments': { minW: 3, minH: 4 },
-  'study-timer':          { minW: 3, minH: 5 },
-  'stat-tiles':           { minW: 4, minH: 3 },
-  'at-risk':              { minW: 3, minH: 3 },
-  'time-per-course':      { minW: 4, minH: 6 },
-  'on-time-rate':         { minW: 3, minH: 6 },
-  'estimate-vs-actual':   { minW: 4, minH: 6 },
-  'weekly-workload':      { minW: 4, minH: 6 },
+  "upcoming-assignments": { minW: 3, minH: 4 },
+  "study-timer":          { minW: 3, minH: 5 },
+  "stat-tiles":           { minW: 4, minH: 3 },
+  "at-risk":              { minW: 3, minH: 3 },
+  "time-per-course":      { minW: 4, minH: 6 },
+  "on-time-rate":         { minW: 3, minH: 6 },
+  "estimate-vs-actual":   { minW: 4, minH: 6 },
+  "weekly-workload":      { minW: 4, minH: 6 }
 };
 const WIDGET_IDS = Object.keys(WIDGETS);
 
 // What a student sees before they customize anything: today's work on the
 // left, the timer and a glance at their numbers on the right.
 const DEFAULT_LAYOUT = [
-  { i: 'stat-tiles',           x: 0, y: 0,  w: 12, h: 3 },
-  { i: 'upcoming-assignments', x: 0, y: 3,  w: 7,  h: 10 },
-  { i: 'study-timer',          x: 7, y: 3,  w: 5,  h: 6 },
-  { i: 'at-risk',              x: 7, y: 9,  w: 5,  h: 4 },
-  { i: 'time-per-course',      x: 0, y: 13, w: 6,  h: 7 },
-  { i: 'on-time-rate',         x: 6, y: 13, w: 6,  h: 7 },
+  { i: "stat-tiles",           x: 0, y: 0,  w: 12, h: 3 },
+  { i: "upcoming-assignments", x: 0, y: 3,  w: 7,  h: 10 },
+  { i: "study-timer",          x: 7, y: 3,  w: 5,  h: 6 },
+  { i: "at-risk",              x: 7, y: 9,  w: 5,  h: 4 },
+  { i: "time-per-course",      x: 0, y: 13, w: 6,  h: 7 },
+  { i: "on-time-rate",         x: 6, y: 13, w: 6,  h: 7 }
 ];
 
 // Must match src/lib/themes.ts.
-const THEMES = ['light-modern', 'dark-modern', 'monokai', 'solarized-light', 'dracula'];
-const DEFAULT_THEME = 'light-modern';
+const THEMES = ["light-modern", "dark-modern", "monokai", "solarized-light", "dracula"];
+const DEFAULT_THEME = "light-modern";
 
 const isInt = (v) => Number.isInteger(v);
 
@@ -60,14 +60,14 @@ const isInt = (v) => Number.isInteger(v);
  * react-grid-layout's `moved`/`static` are dropped). Throws LayoutError(400).
  */
 function validateLayout(layout) {
-  if (!Array.isArray(layout)) throw new LayoutError('layout must be an array.', 400);
+  if (!Array.isArray(layout)) throw new LayoutError("layout must be an array.", 400);
   if (layout.length > WIDGET_IDS.length) {
     throw new LayoutError(`layout can hold at most ${WIDGET_IDS.length} widgets.`, 400);
   }
 
   const seen = new Set();
   return layout.map((item, index) => {
-    if (!item || typeof item !== 'object') throw new LayoutError(`layout[${index}] must be an object.`, 400);
+    if (!item || typeof item !== "object") throw new LayoutError(`layout[${index}] must be an object.`, 400);
     const { i, x, y, w, h } = item;
 
     const spec = WIDGETS[i];
@@ -91,7 +91,7 @@ function validateLayout(layout) {
 /** The student's layout and theme, with defaults for anything never saved. */
 async function getLayout(userID) {
   const { rows: [row] } = await pool.query(
-    `SELECT layout, theme, "updatedAt" FROM "DashboardLayout" WHERE "userID" = $1`,
+    "SELECT layout, theme, \"updatedAt\" FROM \"DashboardLayout\" WHERE \"userID\" = $1",
     [userID]
   );
   const theme = THEMES.includes(row?.theme) ? row.theme : DEFAULT_THEME;
@@ -116,7 +116,7 @@ async function saveLayout(userID, layout) {
 /** Reset: forget the saved layout so the default applies again. The theme stays. */
 async function resetLayout(userID) {
   await pool.query(
-    `UPDATE "DashboardLayout" SET layout = NULL, "updatedAt" = NOW() WHERE "userID" = $1`,
+    "UPDATE \"DashboardLayout\" SET layout = NULL, \"updatedAt\" = NOW() WHERE \"userID\" = $1",
     [userID]
   );
   return getLayout(userID);
@@ -124,7 +124,7 @@ async function resetLayout(userID) {
 
 async function saveTheme(userID, theme) {
   if (!THEMES.includes(theme)) {
-    throw new LayoutError(`theme must be one of: ${THEMES.join(', ')}.`, 400);
+    throw new LayoutError(`theme must be one of: ${THEMES.join(", ")}.`, 400);
   }
   await pool.query(
     `INSERT INTO "DashboardLayout" ("userID", theme, "updatedAt")
@@ -135,7 +135,7 @@ async function saveTheme(userID, theme) {
   return getLayout(userID);
 }
 
-module.exports = {
+export {
   LayoutError,
   COLS,
   MAX_ROWS,
@@ -148,5 +148,5 @@ module.exports = {
   getLayout,
   saveLayout,
   resetLayout,
-  saveTheme,
+  saveTheme
 };

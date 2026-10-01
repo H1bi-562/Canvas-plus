@@ -9,14 +9,14 @@
 //
 // Never mounted in production (see server.js).
 
-const pool = require('../db');
+import { pool } from "../client";
 
-const DEMO_BASE_URL = 'demo://canvas-plus';
+const DEMO_BASE_URL = "demo://canvas-plus";
 
 const DEMO_COURSES = [
-  { id: 'cecs-491b', name: 'Computer Science Senior Project II', code: 'CECS 491B-02', department: 'CECS' },
-  { id: 'cecs-427',  name: 'Network Science',                    code: 'CECS 427-01',  department: 'CECS' },
-  { id: 'cecs-443',  name: 'Software Project Management',        code: 'CECS 443-01',  department: 'CECS' },
+  { id: "cecs-491b", name: "Computer Science Senior Project II", code: "CECS 491B-02", department: "CECS" },
+  { id: "cecs-427",  name: "Network Science",                    code: "CECS 427-01",  department: "CECS" },
+  { id: "cecs-443",  name: "Software Project Management",        code: "CECS 443-01",  department: "CECS" }
 ];
 
 // dueInDays is relative to today, so the dashboard always has a mix of overdue,
@@ -27,55 +27,55 @@ const DEMO_COURSES = [
 // "Mark done" would record: submitted / late / missing (Canvas) or doneDaysAgo
 // (manual). Together they give UC21's charts one of every completion state.
 const DEMO_ASSIGNMENTS = [
-  { id: 'demo-491b-weekly-review-1', course: 'cecs-491b', title: 'Weekly Review — Sprint 3',     points: 10,  dueInDays: -4,
+  { id: "demo-491b-weekly-review-1", course: "cecs-491b", title: "Weekly Review — Sprint 3",     points: 10,  dueInDays: -4,
     estimateMin: 45,  completion: { submittedDaysAgo: 4, late: false },
-    description: 'Summarize what you shipped this sprint, blockers, and next sprint goals.' },
-  { id: 'demo-491b-weekly-review-2', course: 'cecs-491b', title: 'Weekly Review — Sprint 4',     points: 10,  dueInDays: 3,
+    description: "Summarize what you shipped this sprint, blockers, and next sprint goals." },
+  { id: "demo-491b-weekly-review-2", course: "cecs-491b", title: "Weekly Review — Sprint 4",     points: 10,  dueInDays: 3,
     estimateMin: 45,
-    description: 'Summarize what you shipped this sprint, blockers, and next sprint goals.' },
-  { id: 'demo-491b-design-spec',     course: 'cecs-491b', title: 'Design Spec Update (UC21–24)', points: 25,  dueInDays: 10,
+    description: "Summarize what you shipped this sprint, blockers, and next sprint goals." },
+  { id: "demo-491b-design-spec",     course: "cecs-491b", title: "Design Spec Update (UC21–24)", points: 25,  dueInDays: 10,
     estimateMin: 120,
-    description: 'Add sequence and activity diagrams for the new use cases to the living design document.' },
-  { id: 'demo-491b-sprint-demo',     course: 'cecs-491b', title: 'Sprint Demo',                  points: 50,  dueInDays: 17,
+    description: "Add sequence and activity diagrams for the new use cases to the living design document." },
+  { id: "demo-491b-sprint-demo",     course: "cecs-491b", title: "Sprint Demo",                  points: 50,  dueInDays: 17,
     estimateMin: 180,
-    description: 'Live demo of the Canvas sync and study analytics features to the class.' },
-  { id: 'demo-427-reading-quiz',     course: 'cecs-427',  title: 'Reading Quiz — Chapter 3',     points: 10,  dueInDays: 1,
+    description: "Live demo of the Canvas sync and study analytics features to the class." },
+  { id: "demo-427-reading-quiz",     course: "cecs-427",  title: "Reading Quiz — Chapter 3",     points: 10,  dueInDays: 1,
     estimateMin: null,
-    description: 'Short quiz on strong and weak ties, triadic closure, and the clustering coefficient.' },
-  { id: 'demo-427-problem-set-2',    course: 'cecs-427',  title: 'Problem Set 2',                points: 50,  dueInDays: -2,
+    description: "Short quiz on strong and weak ties, triadic closure, and the clustering coefficient." },
+  { id: "demo-427-problem-set-2",    course: "cecs-427",  title: "Problem Set 2",                points: 50,  dueInDays: -2,
     estimateMin: 150, completion: { submittedDaysAgo: 1, late: true },
-    description: 'Graph theory proofs and BFS traces. Show all work.' },
-  { id: 'demo-427-programming-2',    course: 'cecs-427',  title: 'Programming Assignment 2',     points: 100, dueInDays: 5,
+    description: "Graph theory proofs and BFS traces. Show all work." },
+  { id: "demo-427-programming-2",    course: "cecs-427",  title: "Programming Assignment 2",     points: 100, dueInDays: 5,
     estimateMin: 240,
-    description: 'Implement Erdős–Rényi random graphs from the definition and plot the giant component emergence.' },
-  { id: 'demo-443-meeting-minutes',  course: 'cecs-443',  title: 'Team Meeting Minutes',         points: 5,   dueInDays: 2,
+    description: "Implement Erdős–Rényi random graphs from the definition and plot the giant component emergence." },
+  { id: "demo-443-meeting-minutes",  course: "cecs-443",  title: "Team Meeting Minutes",         points: 5,   dueInDays: 2,
     estimateMin: 15,  completion: { doneDaysAgo: 1 },
-    description: 'Submit minutes from this week’s team meeting using the course template.' },
-  { id: 'demo-443-reading-reflection', course: 'cecs-443', title: 'Reading Reflection 2',        points: 10,  dueInDays: -6,
+    description: "Submit minutes from this week’s team meeting using the course template." },
+  { id: "demo-443-reading-reflection", course: "cecs-443", title: "Reading Reflection 2",        points: 10,  dueInDays: -6,
     estimateMin: 30,  completion: { missing: true },
-    description: 'One-page reflection on the assigned case study.' },
-  { id: 'demo-443-study-guide',      course: 'cecs-443',  title: 'Chapter 3 Study Guide',        points: 20,  dueInDays: 8,
+    description: "One-page reflection on the assigned case study." },
+  { id: "demo-443-study-guide",      course: "cecs-443",  title: "Chapter 3 Study Guide",        points: 20,  dueInDays: 8,
     estimateMin: 90,
-    description: 'Answer the review questions on project scheduling and estimation.' },
-  { id: 'demo-443-proposal',         course: 'cecs-443',  title: 'Project Proposal',             points: 100, dueInDays: 14,
+    description: "Answer the review questions on project scheduling and estimation." },
+  { id: "demo-443-proposal",         course: "cecs-443",  title: "Project Proposal",             points: 100, dueInDays: 14,
     estimateMin: 300,
-    description: 'Scope, schedule, risks, and budget for the team project.' },
+    description: "Scope, schedule, risks, and budget for the team project." }
 ];
 
 // Past sessions: which assignment, how many days ago, start hour, active minutes,
 // and paused minutes (wall time = active + paused). Fixed rather than random so
 // tests and screenshots are repeatable.
 const DEMO_SESSIONS = [
-  { assignment: 'demo-427-problem-set-2',    daysAgo: 13, hour: 19, activeMin: 45, pausedMin: 5  },
-  { assignment: 'demo-491b-weekly-review-1', daysAgo: 12, hour: 10, activeMin: 30, pausedMin: 0  },
-  { assignment: 'demo-427-problem-set-2',    daysAgo: 10, hour: 21, activeMin: 70, pausedMin: 15 },
-  { assignment: 'demo-443-meeting-minutes',  daysAgo: 9,  hour: 14, activeMin: 20, pausedMin: 0  },
-  { assignment: 'demo-491b-weekly-review-1', daysAgo: 6,  hour: 22, activeMin: 55, pausedMin: 10 },
-  { assignment: 'demo-427-problem-set-2',    daysAgo: 3,  hour: 23, activeMin: 90, pausedMin: 25 },
-  { assignment: 'demo-427-programming-2',    daysAgo: 3,  hour: 16, activeMin: 40, pausedMin: 5  },
-  { assignment: 'demo-443-study-guide',      daysAgo: 2,  hour: 11, activeMin: 35, pausedMin: 0  },
-  { assignment: 'demo-491b-design-spec',     daysAgo: 1,  hour: 20, activeMin: 60, pausedMin: 12 },
-  { assignment: 'demo-427-programming-2',    daysAgo: 1,  hour: 15, activeMin: 50, pausedMin: 8  },
+  { assignment: "demo-427-problem-set-2",    daysAgo: 13, hour: 19, activeMin: 45, pausedMin: 5  },
+  { assignment: "demo-491b-weekly-review-1", daysAgo: 12, hour: 10, activeMin: 30, pausedMin: 0  },
+  { assignment: "demo-427-problem-set-2",    daysAgo: 10, hour: 21, activeMin: 70, pausedMin: 15 },
+  { assignment: "demo-443-meeting-minutes",  daysAgo: 9,  hour: 14, activeMin: 20, pausedMin: 0  },
+  { assignment: "demo-491b-weekly-review-1", daysAgo: 6,  hour: 22, activeMin: 55, pausedMin: 10 },
+  { assignment: "demo-427-problem-set-2",    daysAgo: 3,  hour: 23, activeMin: 90, pausedMin: 25 },
+  { assignment: "demo-427-programming-2",    daysAgo: 3,  hour: 16, activeMin: 40, pausedMin: 5  },
+  { assignment: "demo-443-study-guide",      daysAgo: 2,  hour: 11, activeMin: 35, pausedMin: 0  },
+  { assignment: "demo-491b-design-spec",     daysAgo: 1,  hour: 20, activeMin: 60, pausedMin: 12 },
+  { assignment: "demo-427-programming-2",    daysAgo: 1,  hour: 15, activeMin: 50, pausedMin: 8  }
 ];
 
 /** Local 11:59 PM, `days` from today. */
@@ -99,10 +99,10 @@ function completionColumns(completion = {}) {
   const submitted = completion.submittedDaysAgo != null;
   return {
     submittedAt:     submitted ? daysAgoEvening(completion.submittedDaysAgo) : null,
-    submissionState: submitted ? 'submitted' : (completion.missing ? 'unsubmitted' : null),
+    submissionState: submitted ? "submitted" : (completion.missing ? "unsubmitted" : null),
     late:            submitted ? Boolean(completion.late) : null,
     missing:         completion.missing ? true : null,
-    completedAt:     completion.doneDaysAgo != null ? daysAgoEvening(completion.doneDaysAgo) : null,
+    completedAt:     completion.doneDaysAgo != null ? daysAgoEvening(completion.doneDaysAgo) : null
   };
 }
 
@@ -118,7 +118,7 @@ function sessionStart(daysAgo, hour) {
 async function seedDemoData(userID) {
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
+    await client.query("BEGIN");
 
     const courseIDs = {};
     for (const course of DEMO_COURSES) {
@@ -151,7 +151,7 @@ async function seedDemoData(userID) {
            late = EXCLUDED.late, missing = EXCLUDED.missing, "completedAt" = EXCLUDED."completedAt"
          RETURNING id, (xmax = 0) AS inserted`,
         [userID, courseIDs[a.course], a.title, a.description, a.points, dueDate(a.dueInDays), a.id,
-         c.submittedAt, c.submissionState, c.late, c.missing, c.completedAt]
+          c.submittedAt, c.submissionState, c.late, c.missing, c.completedAt]
       );
       assignmentIDs[a.id] = row.id;
       if (row.inserted) created += 1;
@@ -162,14 +162,14 @@ async function seedDemoData(userID) {
          ON CONFLICT ("assignmentID") DO UPDATE SET
            "estimatedMinutes" = EXCLUDED."estimatedMinutes",
            "estimateSource"   = EXCLUDED."estimateSource"`,
-        [row.id, a.estimateMin, a.estimateMin == null ? null : 'student']
+        [row.id, a.estimateMin, a.estimateMin == null ? null : "student"]
       );
     }
 
     // Sessions are history, not state: add them only the first time, or a
     // re-seed would double every chart.
     const { rows: [existing] } = await client.query(
-      `SELECT count(*)::int AS n FROM "StudySession" WHERE "userID" = $1 AND "assignmentID" = ANY($2)`,
+      "SELECT count(*)::int AS n FROM \"StudySession\" WHERE \"userID\" = $1 AND \"assignmentID\" = ANY($2)",
       [userID, Object.values(assignmentIDs)]
     );
 
@@ -188,15 +188,15 @@ async function seedDemoData(userID) {
       }
     }
 
-    await client.query('COMMIT');
+    await client.query("COMMIT");
     return {
       courses:     DEMO_COURSES.length,
       assignments: DEMO_ASSIGNMENTS.length,
       created,
-      sessions,
+      sessions
     };
   } catch (err) {
-    await client.query('ROLLBACK');
+    await client.query("ROLLBACK");
     throw err;
   } finally {
     client.release();
@@ -207,7 +207,7 @@ async function seedDemoData(userID) {
 async function clearDemoData(userID) {
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
+    await client.query("BEGIN");
 
     const demoAssignmentIDs = `
       SELECT a.id FROM "Assignment" a
@@ -231,20 +231,20 @@ async function clearDemoData(userID) {
       [DEMO_BASE_URL]
     );
 
-    await client.query('COMMIT');
+    await client.query("COMMIT");
     return { assignments: assignments.rowCount, sessions: sessions.rowCount };
   } catch (err) {
-    await client.query('ROLLBACK');
+    await client.query("ROLLBACK");
     throw err;
   } finally {
     client.release();
   }
 }
 
-module.exports = {
+export {
   DEMO_BASE_URL,
   DEMO_COURSES,
   DEMO_ASSIGNMENTS,
   seedDemoData,
-  clearDemoData,
+  clearDemoData
 };

@@ -11,13 +11,13 @@
 // day. Range boundaries are resolved by Postgres (AT TIME ZONE), and every
 // per-day or per-week bucket uses the student's IANA zone via Intl.
 
-const pool = require('../db');
-const { completionStatus } = require('./assignmentProgress');
+import { pool } from "../client";
+import { completionStatus } from "./assignmentProgress.js";
 
 class AnalyticsError extends Error {
   constructor(message, status = 500) {
     super(message);
-    this.name = 'AnalyticsError';
+    this.name = "AnalyticsError";
     this.status = status;
   }
 }
@@ -33,7 +33,7 @@ const HOUR_MS = 60 * 60 * 1000;
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
 
 // Statuses where the work is handed in (on time or not) or waived.
-const FINISHED = new Set(['submitted', 'done', 'late', 'excused']);
+const FINISHED = new Set(["submitted", "done", "late", "excused"]);
 
 // ── Date helpers (exported for tests) ─────────────────────────────────────
 
@@ -43,7 +43,7 @@ const formatters = new Map();
 function localDateKey(instant, tz) {
   let fmt = formatters.get(tz);
   if (!fmt) {
-    fmt = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' });
+    fmt = new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" });
     formatters.set(tz, fmt);
   }
   const parts = Object.fromEntries(fmt.formatToParts(new Date(instant)).map((p) => [p.type, p.value]));
@@ -65,7 +65,7 @@ function weekStartKey(key) {
 
 /** A real calendar date in YYYY-MM-DD form (rejects 2026-09-31). */
 function isValidDateKey(key) {
-  if (typeof key !== 'string' || !DATE_KEY.test(key)) return false;
+  if (typeof key !== "string" || !DATE_KEY.test(key)) return false;
   const d = new Date(`${key}T00:00:00Z`);
   // Month 13 is an Invalid Date; day 31 of September rolls into October.
   return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === key;
@@ -76,9 +76,9 @@ function daysBetweenInclusive(from, to) {
 }
 
 function isValidTimeZone(tz) {
-  if (typeof tz !== 'string' || !tz) return false;
+  if (typeof tz !== "string" || !tz) return false;
   try {
-    new Intl.DateTimeFormat('en-US', { timeZone: tz });
+    new Intl.DateTimeFormat("en-US", { timeZone: tz });
     return true;
   } catch {
     return false;
@@ -93,17 +93,18 @@ const toMinutes = (seconds) => Math.round(seconds / 60);
 
 function resolveRange({ from, to, tz, now }) {
   if (!isValidTimeZone(tz)) {
-    throw new AnalyticsError('tz must be an IANA time zone such as America/Los_Angeles.', 400);
+    throw new AnalyticsError("tz must be an IANA time zone such as America/Los_Angeles.", 400);
   }
   const today = localDateKey(now, tz);
   const end   = to ?? today;
+  if (!isValidDateKey(end)) throw new AnalyticsError("to must be a date in YYYY-MM-DD form.", 400);
   const start = from ?? addDays(end, -(DEFAULT_RANGE_DAYS - 1));
 
   if (!isValidDateKey(start) || !isValidDateKey(end)) {
-    throw new AnalyticsError('from and to must be dates in YYYY-MM-DD form.', 400);
+    throw new AnalyticsError("from and to must be dates in YYYY-MM-DD form.", 400);
   }
   if (start > end) {
-    throw new AnalyticsError('from must be on or before to.', 400);
+    throw new AnalyticsError("from must be on or before to.", 400);
   }
   const days = daysBetweenInclusive(start, end);
   if (days > MAX_RANGE_DAYS) {
@@ -171,7 +172,7 @@ function computeTotals(sessions) {
     avgSessionMinutes: sessions.length ? round1(active / 60 / sessions.length) : 0,
     // Share of session time spent actually studying rather than paused.
     focusRatio: wall > 0 ? round3(active / wall) : null,
-    activeDays: days.size,
+    activeDays: days.size
   };
 }
 
@@ -192,9 +193,9 @@ function computeTimePerCourse(sessions) {
     const bucket = buckets.get(id) || {
       courseID: id,
       courseCode: id ? s.courseCode : null,
-      courseName: id ? s.courseName : 'General study',
+      courseName: id ? s.courseName : "General study",
       seconds: 0,
-      sessions: 0,
+      sessions: 0
     };
     bucket.seconds += s.durationSeconds;
     bucket.sessions += 1;
@@ -223,7 +224,7 @@ function computeEstVsActual(assignments, actualSecondsByAssignment, inRangeAssig
         estimatedMinutes: a.estimatedMinutes,
         actualMinutes,
         variancePct: Math.round(((actualMinutes - a.estimatedMinutes) / a.estimatedMinutes) * 100),
-        finished: FINISHED.has(a.status),
+        finished: FINISHED.has(a.status)
       };
     });
 
@@ -234,7 +235,7 @@ function computeEstVsActual(assignments, actualSecondsByAssignment, inRangeAssig
 
   return {
     estVsActual: rows.slice(-EST_VS_ACTUAL_LIMIT),
-    estimateRatio: est > 0 ? round3(act / est) : null,
+    estimateRatio: est > 0 ? round3(act / est) : null
   };
 }
 
@@ -244,12 +245,12 @@ function computeCompletion(assignments, boundaries) {
     const due = a.dueAt ? new Date(a.dueAt).getTime() : null;
     if (due === null || due < boundaries.startAt || due >= boundaries.endAt) continue;
     switch (a.status) {
-      case 'submitted':
-      case 'done':    counts.onTime += 1; break;
-      case 'late':    counts.late += 1; break;
-      case 'missing': counts.missing += 1; break;
-      case 'overdue': counts.overdue += 1; break;
-      case 'excused': counts.excused += 1; break;
+      case "submitted":
+      case "done":    counts.onTime += 1; break;
+      case "late":    counts.late += 1; break;
+      case "missing": counts.missing += 1; break;
+      case "overdue": counts.overdue += 1; break;
+      case "excused": counts.excused += 1; break;
       default:        counts.pending += 1;
     }
   }
@@ -324,7 +325,7 @@ function computeAtRisk(assignments, actualSecondsByAssignment, now) {
       dueAt: a.dueAt,
       hoursLeft: Math.round((new Date(a.dueAt).getTime() - now) / HOUR_MS),
       loggedMinutes: toMinutes(actualSecondsByAssignment.get(a.id) || 0),
-      estimatedMinutes: a.estimatedMinutes,
+      estimatedMinutes: a.estimatedMinutes
     }));
 }
 
@@ -352,7 +353,7 @@ async function getSummary(userID, { from, to, tz, now = Date.now() } = {}) {
   const assignments = rawAssignments.map((a) => ({
     ...a,
     status: completionStatus(a, nowMs),
-    dueKey: a.dueAt ? localDateKey(a.dueAt, tz) : null,
+    dueKey: a.dueAt ? localDateKey(a.dueAt, tz) : null
   }));
 
   // All-time active seconds per assignment: an estimate covers the whole job,
@@ -390,15 +391,15 @@ async function getSummary(userID, { from, to, tz, now = Date.now() } = {}) {
     workload,
     courses,
     streak: computeStreak(allSessions, localDateKey(nowMs, tz)),
-    atRisk: computeAtRisk(assignments, actualSecondsByAssignment, nowMs),
+    atRisk: computeAtRisk(assignments, actualSecondsByAssignment, nowMs)
   };
 }
 
-module.exports = {
+export {
   AnalyticsError,
   getSummary,
   localDateKey,
   weekStartKey,
   addDays,
-  isValidDateKey,
+  isValidDateKey
 };
