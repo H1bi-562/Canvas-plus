@@ -3,9 +3,9 @@
 // assignment (UC21 estimated vs. actual). Quick picks cover most answers; a
 // custom field handles the rest.
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
-import { formatMinutes, saveEstimate } from "@/lib/assignmentsApi";
+import { formatMinutes, saveEstimate, fetchSuggestedEstimate, type EstimateSuggestion } from "@/lib/assignmentsApi";
 import { ApiError } from "@/lib/apiClient";
 
 const PRESETS = [15, 30, 60, 120, 240];
@@ -29,13 +29,23 @@ export default function EstimateEditor({
   const [custom, setCustom] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [suggestion, setSuggestion] = useState<EstimateSuggestion | null>(null);
 
-  async function save(minutes: number | null) {
+  // UC7: load the system's suggested time-to-finish for this assignment.
+  useEffect(() => {
+    let active = true;
+    fetchSuggestedEstimate(assignmentID)
+      .then((s) => { if (active) setSuggestion(s); })
+      .catch(() => { if (active) setSuggestion(null); });
+    return () => { active = false; };
+  }, [assignmentID]);
+
+  async function save(minutes: number | null, source: "student" | "ai" = "student") {
     if (saving) return;
     setSaving(true);
     setError(null);
     try {
-      await saveEstimate(assignmentID, minutes);
+      await saveEstimate(assignmentID, minutes, source);
       setCustom("");
       onSaved();
     } catch (err) {
@@ -119,6 +129,23 @@ export default function EstimateEditor({
           </button>
         )}
       </div>
+
+      {suggestion && suggestion.suggestedMinutes !== estimatedMinutes && (
+        <div className="mt-2 flex items-center gap-2">
+          <span className={`text-sm ${muted}`}>
+            Suggested: ~{formatMinutes(suggestion.suggestedMinutes)}
+            {suggestion.basis.calibrated ? " · based on your pace" : ""}
+          </span>
+          <button
+            type="button"
+            disabled={saving}
+            onClick={() => save(suggestion.suggestedMinutes, "ai")}
+            className={chip(false)}
+          >
+            Use
+          </button>
+        </div>
+      )}
 
       {error && <p role="alert" className="mt-2 text-sm text-red-600">{error}</p>}
     </div>

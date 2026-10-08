@@ -1,6 +1,7 @@
 import { pool } from "../client";
 import { HttpError } from "../errors.js";
 import * as progress from "./assignmentProgress.js";
+import * as estimate from "./estimate.js";
 
 
 export async function listAssignments(userId, query = {}) {
@@ -183,7 +184,8 @@ export async function saveAssignmentDetails(userId, id, body = {}) {
 
 export async function setAssignmentEstimate(userId, id, body = {}) {
   try {
-    return await progress.setEstimate(userId, id, body?.minutes);
+    const source = body?.source === "ai" ? "ai" : "student";
+    return await progress.setEstimate(userId, id, body?.minutes, source);
   } catch (err) {
     if (err instanceof HttpError) throw err;
     if (err instanceof progress.ProgressError) {
@@ -191,6 +193,16 @@ export async function setAssignmentEstimate(userId, id, body = {}) {
     }
     console.error("Set estimate error:", err.message);
     throw new HttpError(500, "Failed to save estimate" );
+  }
+}
+
+export async function suggestAssignmentEstimate(userId, id) {
+  try {
+    return await estimate.suggestEstimate(userId, id);
+  } catch (err) {
+    if (err instanceof HttpError) throw err;
+    console.error("Suggest estimate error:", err.message);
+    throw new HttpError(500, "Failed to suggest an estimate" );
   }
 }
 
