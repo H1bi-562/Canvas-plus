@@ -141,10 +141,34 @@ export function formatMinutes(minutes: number): string {
   return rest ? `${hours}h ${rest}m` : `${hours}h`;
 }
 
-/** Save the student's estimate in whole minutes, or clear it with null. */
-export function saveEstimate(assignmentID: string, minutes: number | null) {
-  return apiRequest<{ assignmentID: string; estimatedMinutes: number | null }>(
-    `/api/assignments/${assignmentID}/estimate`, "PATCH", { minutes }
+export interface EstimateSuggestion {
+  assignmentID: string;
+  suggestedMinutes: number;
+  basis: {
+    points: number | null;
+    priorityScore: number | null;
+    minutesPerPoint: number;
+    /** true once it reflects the student's own study history, not the default. */
+    calibrated: boolean;
+  };
+}
+
+/** UC7: fetch the system-computed time-to-finish suggestion for one assignment. */
+export function fetchSuggestedEstimate(assignmentID: string) {
+  return apiRequest<EstimateSuggestion>(`/api/assignments/${assignmentID}/estimate`);
+}
+
+/**
+ * Save an estimate in whole minutes, or clear it with null. Source defaults to
+ * 'student'; pass 'ai' when the student accepts the UC7 suggestion.
+ */
+export function saveEstimate(
+  assignmentID: string,
+  minutes: number | null,
+  source: "student" | "ai" = "student"
+) {
+  return apiRequest<{ assignmentID: string; estimatedMinutes: number | null; estimateSource: "student" | "ai" | null }>(
+    `/api/assignments/${assignmentID}/estimate`, "PATCH", { minutes, source }
   );
 }
 
