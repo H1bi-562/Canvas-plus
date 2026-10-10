@@ -1,0 +1,36 @@
+{
+  "name": "@canvasplus/database",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/client.ts",
+    "./schema": "./src/schema.ts",
+    "./queries/*": "./src/queries/*.js",
+    "./crypto": "./src/crypto.js"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --exclude '**/*.integration.test.*'",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/migrate.ts"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.3",
+    "pg": "^8.20.0",
+    "dotenv": "^17.4.2"
+  },
+  "devDependencies": {
+    "@canvasplus/eslint": "workspace:*",
+    "@canvasplus/vitest": "workspace:*",
+    "typescript": "^5.9.3",
+    "@types/node": "^24.0.0",
+    "eslint": "^9.39.0",
+    "vitest": "^5.0.3",
+    "drizzle-kit": "^0.31.0",
+    "@types/pg": "^8.15.0",
+    "tsx": "^4.20.0"
+  }
+}
