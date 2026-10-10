@@ -5,7 +5,8 @@
 // student drags widgets by their handle, resizes them from the corner, removes
 // them, and adds hidden ones back from the widget library. Nothing is stored
 // until Save; Cancel throws the draft away. The saved layout lives on the
-// server (routes/layout.js), so it follows the student across devices.
+// server (routes/layout.js), so it follows the student across devices;
+// DashboardProvider loads it, keeps a copy in this browser, and syncs it.
 //
 // Below 768px the grid is replaced by a single stacked column in layout order,
 // and editing is disabled: dragging a 12-column grid on a phone is not usable.
@@ -21,7 +22,7 @@ import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import "@/app/(dashboard)/assignments/_components/home.css";
 import { WIDGETS, DEFAULT_LAYOUT, type WidgetContext } from "@/app/(dashboard)/assignments/_components/widgetRegistry";
-import { fetchLayout, saveLayout, resetLayout, type LayoutItem } from "@/app/(dashboard)/assignments/_api/layoutApi";
+import { saveLayout, resetLayout, type LayoutItem, type LayoutResponse } from "@/app/(dashboard)/assignments/_api/layoutApi";
 import { fetchAnalyticsSummary, localDateKey, type AnalyticsSummary } from "@/lib/analyticsApi";
 import { ApiError } from "@/lib/apiClient";
 import type { Assignment } from "@/lib/assignmentsApi";
@@ -76,6 +77,12 @@ interface HomeViewProps {
   onSignedOut: () => void;
   themeId: ThemeId;
   onThemeChange: (id: ThemeId) => void;
+  /** The saved layout from DashboardProvider (browser copy, then server); null until known. */
+  savedLayout: LayoutItem[] | null;
+  /** Set when the layout could not be loaded and this browser has no copy. */
+  layoutLoadError: string | null;
+  /** Hand a save's response back so the provider updates its copy and the other tabs. */
+  onLayoutSaved: (res: LayoutResponse) => void;
 }
 
 export default function HomeView({
@@ -90,12 +97,19 @@ export default function HomeView({
   onAssignmentsChanged,
   onSignedOut,
   themeId,
-  onThemeChange
+  onThemeChange,
+  savedLayout,
+  layoutLoadError,
+  onLayoutSaved
 }: HomeViewProps) {
   const wide = useIsWide();
 
   // ── Layout ────────────────────────────────────────────────────────────────
-  const [saved, setSaved] = useState<LayoutItem[] | null>(null);
+  // A failed load still shows a usable home screen; saving will surface the real problem.
+  const saved = useMemo(
+    () => (savedLayout ? known(savedLayout) : layoutLoadError ? DEFAULT_LAYOUT : null),
+    [savedLayout, layoutLoadError]
+  );
   const [draft, setDraft] = useState<LayoutItem[] | null>(null); // non-null = editing
   const [layoutError, setLayoutError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -107,19 +121,6 @@ export default function HomeView({
     }
     return err instanceof ApiError ? err.message : fallback;
   }, [onSignedOut]);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchLayout()
-      .then((res) => { if (!cancelled) setSaved(known(res.layout)); })
-      .catch((err) => {
-        if (cancelled) return;
-        // Still show a usable home screen; saving will surface the real problem.
-        setSaved(DEFAULT_LAYOUT);
-        setLayoutError(handleError(err, "Could not load your saved layout, showing the default."));
-      });
-    return () => { cancelled = true; };
-  }, [handleError]);
 
   const editing = draft !== null;
   const layout = draft ?? saved;
@@ -199,7 +200,7 @@ export default function HomeView({
       // Matching the default is stored as "no custom layout", so a student who
       // resets keeps getting future improvements to the default.
       const res = sameLayout(draft, DEFAULT_LAYOUT) ? await resetLayout() : await saveLayout(draft);
-      setSaved(known(res.layout));
+      onLayoutSaved(res);
       setDraft(null);
     } catch (err) {
       setLayoutError(handleError(err, "Could not save your layout."));
@@ -256,11 +257,11 @@ export default function HomeView({
           )}
         </div>
 
-        {layoutError && (
+        {(layoutError ?? layoutLoadError) && (
           <div role="alert" className={`mb-2 p-3 rounded-lg text-sm ${
             darkMode ? "bg-red-900/30 border border-red-700 text-red-300" : "bg-red-50 border border-red-200 text-red-700"
           }`}>
-            {layoutError}
+            {layoutError ?? layoutLoadError}
           </div>
         )}
 

@@ -4,7 +4,7 @@ import HomeView from "@/app/(dashboard)/assignments/_components/HomeView";
 import { useDashboard } from "../_components/DashboardProvider";
 
 export default function Page() {
-  const { setSelectedAssignment, setCurrentView, themeId, assignments, assignmentsLoading, assignmentsError, darkMode, loadAssignments, changeTheme, signOutLocally, getPriorityColor } = useDashboard();
+  const { setSelectedAssignment, setCurrentView, themeId, assignments, assignmentsLoading, assignmentsError, darkMode, loadAssignments, changeTheme, signOutLocally, getPriorityColor, savedLayout, layoutLoadError, applyServerPreferences } = useDashboard();
   return (<HomeView
     darkMode={darkMode}
     assignments={assignments}
@@ -18,5 +18,8 @@ export default function Page() {
     onSignedOut={signOutLocally}
     themeId={themeId}
     onThemeChange={changeTheme}
+    savedLayout={savedLayout}
+    layoutLoadError={layoutLoadError}
+    onLayoutSaved={applyServerPreferences}
   />);
 }

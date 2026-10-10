@@ -1,11 +1,12 @@
 "use client";
 
-import { createContext, useContext, useCallback, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useCallback, useEffect, useLayoutEffect, useState, type ReactNode } from "react";
 import AssignmentDetails from "@/components/AssignmentDetails";
 import BottomNav from "@/components/BottomNav";
 import { Assignment, fetchAssignments } from "@/lib/assignmentsApi";
 import { ApiError, logout } from "@/lib/apiClient";
-import { fetchLayout, saveTheme } from "@/app/(dashboard)/assignments/_api/layoutApi";
+import { fetchLayout, saveTheme, type LayoutItem, type LayoutResponse } from "@/app/(dashboard)/assignments/_api/layoutApi";
+import { clearPreferences, readPreferences, subscribePreferences, writePreferences } from "@/lib/preferencesCache";
 import { DEFAULT_THEME, getTheme, type ThemeId } from "@/lib/themes";
 import { useRouter } from "next/navigation";
 
@@ -13,7 +14,7 @@ type ViewType = "assignments" | "calendar" | "focus" | "analytics" | "profile" |
 
 const DashboardContext = createContext<ReturnType<typeof useDashboardState> | null>(null);
 
-function useDashboardState(initialName: string) {
+function useDashboardState(initialName: string, userId: string) {
   const router = useRouter();
   const [selectedAssignment, setSelectedAssignment] = useState<string | null>(null);
   const setCurrentView = (view: ViewType) => router.push(view === "profile" ? "/settings" : view === "auth" ? "/login" : `/${view}`);
@@ -45,14 +46,20 @@ function useDashboardState(initialName: string) {
   const [assignmentsLoading, setAssignmentsLoading] = useState(false);
   const [assignmentsError, setAssignmentsError] = useState<string | null>(null);
 
+  // UC22 – the home layout, owned here so it syncs alongside the theme (same row on the server).
+  const [savedLayout, setSavedLayout] = useState<LayoutItem[] | null>(null);
+  const [layoutLoadError, setLayoutLoadError] = useState<string | null>(null);
+
   const signOutLocally = useCallback(() => {
     setSignedInUser(null);
     setAssignments([]);
     setSelectedAssignment(null);
     setThemeId(DEFAULT_THEME); // the next student on this machine starts fresh
+    setSavedLayout(null);
+    clearPreferences(userId);
     router.replace("/login");
     router.refresh();
-  }, [router]);
+  }, [router, userId]);
 
   const loadAssignments = useCallback(async () => {
     setAssignmentsLoading(true);
@@ -72,25 +79,87 @@ function useDashboardState(initialName: string) {
     void loadAssignments();
   }, [loadAssignments]);
 
-  // The saved theme. A failure just leaves the default; HomeView reports
-  // problems with the same endpoint.
+  // ── Theme + layout sync ────────────────────────────────────────────────────
+  // This browser's copy (lib/preferencesCache) paints first; the database wins
+  // whenever its row has changed, except over a theme picked here that is not
+  // saved yet, which is pushed instead.
+
+  /** Adopt the server's row, keeping a theme that is still waiting to be saved. */
+  const applyServerPreferences = useCallback((res: LayoutResponse) => {
+    setLayoutLoadError(null);
+    const local = readPreferences(userId);
+    const themeDirty = local?.themeDirty ?? false;
+    if (local?.layout && !themeDirty && local.updatedAt === res.updatedAt) return; // nothing changed anywhere
+    const theme = themeDirty && local ? local.theme : getTheme(res.theme).id;
+    writePreferences(userId, { theme, layout: res.layout, updatedAt: res.updatedAt, themeDirty });
+    setThemeId(theme);
+    setSavedLayout(res.layout);
+  }, [userId]);
+
+  /** Save a theme, then adopt the server's row unless a newer pick replaced it meanwhile. */
+  const pushTheme = useCallback(async (id: ThemeId) => {
+    const res = await saveTheme(id);
+    const local = readPreferences(userId);
+    if (local?.theme !== id) return;
+    writePreferences(userId, { ...local, themeDirty: false });
+    applyServerPreferences(res);
+  }, [userId, applyServerPreferences]);
+
+  const syncPreferences = useCallback(async () => {
+    try {
+      const local = readPreferences(userId);
+      if (local?.themeDirty) await pushTheme(local.theme);
+      else applyServerPreferences(await fetchLayout());
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) return signOutLocally();
+      // Keep this browser's copy; with none, HomeView shows the default layout and this message.
+      if (!readPreferences(userId)?.layout) {
+        setLayoutLoadError(err instanceof ApiError ? err.message : "Could not load your saved layout, showing the default.");
+      }
+    }
+  }, [userId, pushTheme, applyServerPreferences, signOutLocally]);
+
+  // Before the first paint after hydration, so the saved theme shows without a flash of the default.
+  // ponytail: the server-rendered HTML still uses the default theme until hydration; mirror the
+  // theme into a cookie and read it in (dashboard)/layout.tsx if that first frame matters.
+  useLayoutEffect(() => {
+    const local = readPreferences(userId);
+    if (!local) return;
+    setThemeId(local.theme);
+    if (local.layout) setSavedLayout(local.layout);
+  }, [userId]);
+
   useEffect(() => {
-    fetchLayout().then((res) => setThemeId(getTheme(res.theme).id)).catch(() => {});
-  }, []);
+    void syncPreferences();
+    // Another device may have saved changes while this window was in the background.
+    const onFocus = () => { void syncPreferences(); };
+    window.addEventListener("focus", onFocus);
+    // Another tab in this browser changed them: apply straight away, no request needed.
+    const unsubscribe = subscribePreferences(userId, (preferences) => {
+      setThemeId(preferences.theme);
+      if (preferences.layout) setSavedLayout(preferences.layout);
+    });
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      unsubscribe();
+    };
+  }, [userId, syncPreferences]);
 
   // On <html>, not the app root, so dialogs portalled to <body> are themed too.
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.documentElement.dataset.theme = themeId;
   }, [themeId]);
 
-  /** Apply at once (like VS Code's theme picker) and save in the background. */
+  /** Apply at once (like VS Code's theme picker), keep it in this browser, and save in the background. */
   const changeTheme = useCallback((id: ThemeId) => {
     setThemeId(id);
-    saveTheme(id).catch((err) => {
+    const local = readPreferences(userId);
+    writePreferences(userId, { layout: local?.layout ?? null, updatedAt: local?.updatedAt ?? null, theme: id, themeDirty: true });
+    pushTheme(id).catch((err) => {
       if (err instanceof ApiError && err.status === 401) signOutLocally();
-      else console.error("Could not save theme:", err);
+      else console.error("Could not save theme; it will be retried on the next sync:", err);
     });
-  }, [signOutLocally]);
+  }, [userId, pushTheme, signOutLocally]);
 
   const [logoutError, setLogoutError] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -129,7 +198,7 @@ function useDashboardState(initialName: string) {
     window.addEventListener("session-expired", signOutLocally);
     return () => window.removeEventListener("session-expired", signOutLocally);
   }, [signOutLocally]);
-  return { selectedAssignment, setSelectedAssignment, focusModeEnabled, setFocusModeEnabled, blockedSites, setBlockedSites, aiApiKey, setAiApiKey, showAiKey, setShowAiKey, emailNotifications, setEmailNotifications, pushNotifications, setPushNotifications, themeId, setThemeId, signedInUser, setSignedInUser, assignmentDueWarning, setAssignmentDueWarning, dueWarningTimeframe, setDueWarningTimeframe, smartScheduler, setSmartScheduler, assignmentDecomposition, setAssignmentDecomposition, assignments, setAssignments, assignmentsLoading, setAssignmentsLoading, assignmentsError, setAssignmentsError, darkMode, loadAssignments, changeTheme, signOutLocally, getPriorityColor, setCurrentView, selectedAssignmentData, handleLogout, logoutError, loggingOut };
+  return { selectedAssignment, setSelectedAssignment, focusModeEnabled, setFocusModeEnabled, blockedSites, setBlockedSites, aiApiKey, setAiApiKey, showAiKey, setShowAiKey, emailNotifications, setEmailNotifications, pushNotifications, setPushNotifications, themeId, setThemeId, signedInUser, setSignedInUser, assignmentDueWarning, setAssignmentDueWarning, dueWarningTimeframe, setDueWarningTimeframe, smartScheduler, setSmartScheduler, assignmentDecomposition, setAssignmentDecomposition, assignments, setAssignments, assignmentsLoading, setAssignmentsLoading, assignmentsError, setAssignmentsError, darkMode, loadAssignments, changeTheme, signOutLocally, getPriorityColor, setCurrentView, selectedAssignmentData, handleLogout, logoutError, loggingOut, savedLayout, layoutLoadError, applyServerPreferences };
 }
 
 export function useDashboard() {
@@ -138,8 +207,8 @@ export function useDashboard() {
   return context;
 }
 
-export default function DashboardProvider({ initialName, children }: { initialName: string; children: ReactNode }) {
-  const state = useDashboardState(initialName);
+export default function DashboardProvider({ initialName, userId, children }: { initialName: string; userId: string; children: ReactNode }) {
+  const state = useDashboardState(initialName, userId);
   const { darkMode, signedInUser, handleLogout, logoutError, loggingOut, selectedAssignmentData, setSelectedAssignment, getPriorityColor, loadAssignments } = state;
   return <DashboardContext.Provider value={state}>
     <div className={`size-full flex flex-col ${darkMode ? "bg-[var(--cp-page)]" : "bg-gray-50"}`}>
