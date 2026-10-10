@@ -108,7 +108,21 @@ Use `http://localhost:3000/api/canvas/callback` as the local redirect URI.
 Stored tokens are encrypted and never returned to the browser.
 Demo data controls exist only in development.
 
-The existing Google connection, AI actions, notifications, and website-blocking controls remain presentation-only features.
+## Google Calendar
+
+The Calendar page can show a student's Google Calendar events beside Canvas due dates.
+Access is read-only and events are fetched live for the month on screen; nothing is copied into the database.
+Students connect from Settings; Better Auth keeps the encrypted grant in the `Account` table and refreshes it.
+
+1. In Google Cloud Console, create a project and enable the **Google Calendar API**.
+2. Configure the OAuth consent screen, add the `https://www.googleapis.com/auth/calendar.readonly` scope, and list each tester under **Test users** while the app is in Testing mode.
+3. Create an OAuth client of type **Web application** with the redirect URI `http://localhost:3000/api/auth/callback/google`.
+4. Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `.env` and restart `pnpm dev`.
+
+Without these variables the Google toggle is hidden and Settings says Google is not configured.
+`calendar.readonly` is a sensitive scope, so a public deployment needs Google's app verification.
+
+The existing AI actions, notifications, and website-blocking controls remain presentation-only features.
 The extension does not block websites.
 Password reset needs a mail provider and reset-email integration; the UI now states that it is unconfigured instead of claiming an email was sent.
 

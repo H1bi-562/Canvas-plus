@@ -1,5 +1,6 @@
 import { Eye, EyeOff } from "lucide-react";
 import CanvasConnection from "@/app/(dashboard)/settings/_components/CanvasConnection";
+import GoogleConnection from "@/app/(dashboard)/settings/_components/GoogleConnection";
 
 interface SettingsProps {
   darkMode: boolean;
@@ -85,14 +86,8 @@ export default function Settings({
           {/* Canvas Integration — token connect, sync, and dev-only demo data */}
           <CanvasConnection darkMode={darkMode} onAssignmentsChanged={onAssignmentsChanged} />
 
-          {/* Google Integration */}
-          <div className={`rounded-lg shadow-sm p-6 ${darkMode ? "bg-[var(--cp-card)]" : "bg-white"}`}>
-            <h2 className={`font-semibold mb-2 ${darkMode ? "text-white" : "text-gray-900"}`}>Google Integration</h2>
-            <p className={`text-sm mb-4 ${darkMode ? "text-gray-300" : "text-gray-600"}`}>Connect your Google account to sync calendars and assignments</p>
-            <button className="bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-6 rounded-lg transition-colors">
-              Connect Google Account
-            </button>
-          </div>
+          {/* Google Calendar — read-only import shown on the Calendar page */}
+          <GoogleConnection darkMode={darkMode} />
 
           {/* AI Integration */}
           <div className={`rounded-lg shadow-sm p-6 ${darkMode ? "bg-[var(--cp-card)]" : "bg-white"}`}>

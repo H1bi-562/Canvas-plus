@@ -14,6 +14,8 @@
     "CANVAS_CLIENT_SECRET",
     "CANVAS_REDIRECT_URI",
     "CANVAS_SCOPES",
+    "GOOGLE_CLIENT_ID",
+    "GOOGLE_CLIENT_SECRET",
     "WXT_WEB_APP_URL"
   ],
   "tasks": {
