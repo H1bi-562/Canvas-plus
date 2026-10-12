@@ -17,11 +17,28 @@ type ViewType = 'assignments' | 'calendar' | 'focus' | 'analytics' | 'profile' |
 
 export default function App() {
   const [selectedAssignment, setSelectedAssignment] = useState<string | null>(null);
-  const [currentView, setCurrentView] = useState<ViewType>('auth');  const [focusModeEnabled, setFocusModeEnabled] = useState(false);
-  const [showFocusWarning, setShowFocusWarning] = useState(false);
-  const leftStudyTab = useRef(false);
-  useEffect(() => {
+  const [currentView, setCurrentView] = useState<ViewType>('auth');
+  const [focusModeEnabled, setFocusModeEnabled] = useState(false);
+const [showFocusWarning, setShowFocusWarning] = useState(false);
+const leftStudyTab = useRef(false);
+
+// Requests notification permission when Focus Mode is turned on
+const handleFocusModeChange = (enabled: boolean) => {
+  if (
+    enabled &&
+    'Notification' in window &&
+    Notification.permission === 'default'
+  ) {
+    void Notification.requestPermission();
+  }
+
+  setFocusModeEnabled(enabled);
+};
+
+// Detects leaving and returning to the CanvasPlus tab
+useEffect(() => {
   if (!focusModeEnabled) {
+    leftStudyTab.current = false;
     setShowFocusWarning(false);
     return;
   }
@@ -29,16 +46,51 @@ export default function App() {
   const handleVisibilityChange = () => {
     if (document.hidden) {
       leftStudyTab.current = true;
+
+      // Browser notification when the user leaves
+      if (
+        'Notification' in window &&
+        Notification.permission === 'granted'
+      ) {
+        new Notification('Focus Mode is active', {
+          body: 'Come back to CanvasPlus and keep studying.',
+          tag: 'canvasplus-focus-mode',
+        });
+      }
     } else if (leftStudyTab.current) {
       leftStudyTab.current = false;
+
+      // Custom warning when the user returns
       setShowFocusWarning(true);
     }
   };
 
-  document.addEventListener('visibilitychange', handleVisibilityChange);
+  document.addEventListener(
+    'visibilitychange',
+    handleVisibilityChange
+  );
 
   return () => {
-    document.removeEventListener('visibilitychange', handleVisibilityChange);
+    document.removeEventListener(
+      'visibilitychange',
+      handleVisibilityChange
+    );
+  };
+}, [focusModeEnabled]);
+
+// Browser's built-in leave-site warning
+useEffect(() => {
+  if (!focusModeEnabled) return;
+
+  const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
+    event.preventDefault();
+    event.returnValue = '';
+  };
+
+  window.addEventListener('beforeunload', warnBeforeLeaving);
+
+  return () => {
+    window.removeEventListener('beforeunload', warnBeforeLeaving);
   };
 }, [focusModeEnabled]);
   const [blockedSites, setBlockedSites] = useState([
