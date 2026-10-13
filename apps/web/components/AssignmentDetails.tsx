@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Calendar, CheckCircle2, Loader2, X } from "lucide-react";
+import { Calendar, CheckCircle2, Loader2, Sparkles, X } from "lucide-react";
 
 import {
   Assignment,
   FINISHED_STATUSES,
   formatMinutes,
-  saveCompleted
+  saveCompleted,
+  generateSummary
 } from "@/lib/assignmentsApi";
 import { ApiError } from "@/lib/apiClient";
 import CompletionBadge from "@/components/CompletionBadge";
@@ -30,6 +31,23 @@ export default function AssignmentDetails({
 }: AssignmentDetailsProps) {
   const [savingDone, setSavingDone] = useState(false);
   const [doneError, setDoneError] = useState<string | null>(null);
+  const [summary, setSummary] = useState<string | null>(assignment?.summary ?? null);
+  const [summarizing, setSummarizing] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+
+  async function handleSummarize() {
+    if (summarizing || !assignment) return;
+    setSummarizing(true);
+    setSummaryError(null);
+    try {
+      const res = await generateSummary(assignment.id);
+      setSummary(res.summary);
+    } catch (err) {
+      setSummaryError(err instanceof ApiError ? err.message : "Could not generate a summary.");
+    } finally {
+      setSummarizing(false);
+    }
+  }
 
   if (!assignment) return null;
 
@@ -182,9 +200,21 @@ export default function AssignmentDetails({
 
           {/* Action Buttons */}
           <div className={`space-y-3 pt-4 border-t ${darkMode ? "border-gray-700" : "border-gray-200"}`}>
-            <button className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
-              <span>AI Summary</span>
-            </button>
+            <div>
+              <button
+                type="button"
+                onClick={handleSummarize}
+                disabled={summarizing}
+                className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {summarizing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                <span>{summary ? "Regenerate AI Summary" : "AI Summary"}</span>
+              </button>
+              {summary && (
+                <p className={`mt-2 text-sm leading-relaxed ${darkMode ? "text-gray-300" : "text-gray-700"}`}>{summary}</p>
+              )}
+              {summaryError && <p role="alert" className="mt-2 text-sm text-red-600">{summaryError}</p>}
+            </div>
 
             <button className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
               <span>Break into Tasks</span>

@@ -17,6 +17,7 @@ interface AssignmentRow {
   htmlURL: string | null;
   isDemo: boolean;
   priorityScore: number | null;
+  summary?: string | null;
   estimatedMinutes: number | null;
   estimateSource: "student" | "ai" | null;
   submittedAt: string | null;
@@ -51,6 +52,7 @@ export interface Assignment {
   courseCode: string | null;
   htmlURL: string | null;
   isDemo: boolean;
+  summary?: string | null;
   estimatedMinutes: number | null;
   estimateSource: "student" | "ai" | null;
   /** Active minutes from finished study sessions on this assignment. */
@@ -117,6 +119,7 @@ export function toAssignment(row: AssignmentRow, now: number = Date.now()): Assi
     courseCode: row.courseCode,
     htmlURL: row.htmlURL,
     isDemo: Boolean(row.isDemo),
+    summary: row.summary ?? null,
     estimatedMinutes: row.estimatedMinutes,
     estimateSource: row.estimateSource,
     loggedMinutes: Math.round((row.loggedSeconds || 0) / 60),
@@ -170,6 +173,19 @@ export function saveEstimate(
   return apiRequest<{ assignmentID: string; estimatedMinutes: number | null; estimateSource: "student" | "ai" | null }>(
     `/api/assignments/${assignmentID}/estimate`, "PATCH", { minutes, source }
   );
+}
+
+/** UC13: an AI-generated summary of an assignment's description. */
+export interface SummaryResult {
+  assignmentID: string;
+  summary: string;
+  /** 'ai' when a real LLM produced it, otherwise the deterministic summary. */
+  source: "ai" | "extractive" | "extractive-fallback";
+}
+
+/** UC13: generate and store an AI summary for one assignment. */
+export function generateSummary(assignmentID: string) {
+  return apiRequest<SummaryResult>(`/api/assignments/${assignmentID}/summary`, "POST", {});
 }
 
 /** "Mark done" (true) or undo it (false). Canvas sync never overwrites this. */
