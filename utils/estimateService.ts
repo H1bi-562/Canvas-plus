@@ -20,12 +20,12 @@ export const DEFAULT_CONFIG: UserConfig = {
     hoursPerDay: 3,
 };
 
-export function estimateAssignmentsHours(
-    assignments: Assignment[],
+export function estimateAssignmentHours(
+    assignment: Assignment[],
     config: UserConfig = DEFAULT_CONFIG
 ): number{
     let totalHours = 0;
-    for (const assignment of assignments) {
+    for (const assignment of assignment) {
         if (assignment.manualEstimateHours != null) {
             totalHours += assignment.manualEstimateHours;
         } else {
@@ -49,7 +49,7 @@ export function estimateTimeToFinish(
     const perAssignment: AssignmentEstimate[] = [];
     let totalHours = 0;
     for (const a of remaining) {
-        const hours = estimateAssignmentsHours([a], config);
+        const hours = estimateAssignmentHours([a], config);
         totalHours += hours;
 
         const daysNeeded = Math.ceil(totalHours / config.hoursPerDay);
