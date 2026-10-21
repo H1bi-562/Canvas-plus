@@ -14,7 +14,12 @@ export interface Assignment {
     manualEstimateHours?: number | null;
 }
 
-export interface AssignmetnEstimate {
+export interface UserConfig {
+    paceMultiplier: number; //.75 fast , 1.0 normal, 1.25 slow
+    hoursPerDay: number;
+}
+
+export interface AssignmentEstimate {
     id: string;
     hours: number;
     projectedFinish: string;
@@ -24,15 +29,15 @@ export interface AssignmetnEstimate {
 export interface EstimateSummary {
     totalHours: number;
     totalDays: number;
-    perAssignment: AssignmetnEstimate[];
+    perAssignment: AssignmentEstimate[];
 }
 
-export type Priority = "low" | "medium" | "high";
+export type PriorityLevel = "low" | "medium" | "high";
 
 export interface PriorityScore {
     id: string;
     score: number;
-    level: Priority;
+    level: PriorityLevel;
     breakdown: {urgency: number, impact: number, effort: number};
 }
   
