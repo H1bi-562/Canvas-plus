@@ -1,6 +1,7 @@
-// src/lib/themes.ts
+// @canvasplus/ui/themes
 // UC22 – the colour themes a student can pick in Customize. The colours live in
-// src/styles/themes.css; ids must match THEMES in services/dashboardLayout.js.
+// ../styles.css; ids must match THEMES in queries/dashboardLayout.js. The web
+// app and the extension popup both read the student's pick from /api/layout.
 
 export type ThemeId = "light-modern" | "dark-modern" | "monokai" | "solarized-light" | "dracula";
 

@@ -104,3 +104,12 @@ export async function storeAssignments(userID, baseURL, byCourse) {
     syncedAt:    new Date().toISOString()
   };
 }
+
+/** When this student's assignments were last pulled from Canvas, or null if never. */
+export async function lastSyncedAt(userID) {
+  const { rows: [row] } = await pool.query(
+    "SELECT MAX(\"syncedAt\") AS at FROM \"Assignment\" WHERE \"userID\" = $1",
+    [userID]
+  );
+  return row.at;
+}

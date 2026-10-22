@@ -16,6 +16,7 @@ import TimePerCourseChart from "@/components/analytics/TimePerCourseChart";
 import OnTimeRate from "@/components/analytics/OnTimeRate";
 import EstimateVsActualChart from "@/components/analytics/EstimateVsActualChart";
 import WorkloadChart from "@/components/analytics/WorkloadChart";
+import PriorityList from "@canvasplus/ui/PriorityList";
 import type { AnalyticsSummary } from "@/lib/analyticsApi";
 import type { Assignment } from "@/lib/assignmentsApi";
 import type { LayoutItem } from "@/app/(dashboard)/assignments/_api/layoutApi";
@@ -71,6 +72,20 @@ function withSummary(ctx: WidgetContext, render: (summary: AnalyticsSummary) => 
 }
 
 export const WIDGETS: Record<string, WidgetSpec> = {
+  "priority-list": {
+    title: "Top Priorities",
+    description: "Your most important open work, ranked (UC15).",
+    minW: 3, minH: 4, defaultW: 6, defaultH: 8, usesSummary: false,
+    Component: (ctx) => (
+      <PriorityList
+        items={ctx.assignments}
+        darkMode={ctx.darkMode}
+        isLoading={ctx.assignmentsLoading && ctx.assignments.length === 0}
+        error={ctx.assignmentsError}
+        onSelect={(assignment) => ctx.onSelectAssignment(assignment.id)}
+      />
+    )
+  },
   "upcoming-assignments": {
     title: "Assignments",
     description: "Your synced assignments with due dates and priority.",
@@ -136,9 +151,10 @@ export const WIDGETS: Record<string, WidgetSpec> = {
 
 export const DEFAULT_LAYOUT: LayoutItem[] = [
   { i: "stat-tiles",           x: 0, y: 0,  w: 12, h: 3 },
-  { i: "upcoming-assignments", x: 0, y: 3,  w: 7,  h: 10 },
+  { i: "priority-list",        x: 0, y: 3,  w: 7,  h: 8 },
   { i: "study-timer",          x: 7, y: 3,  w: 5,  h: 6 },
   { i: "at-risk",              x: 7, y: 9,  w: 5,  h: 4 },
-  { i: "time-per-course",      x: 0, y: 13, w: 6,  h: 7 },
-  { i: "on-time-rate",         x: 6, y: 13, w: 6,  h: 7 }
+  { i: "upcoming-assignments", x: 0, y: 11, w: 7,  h: 10 },
+  { i: "on-time-rate",         x: 7, y: 13, w: 5,  h: 7 },
+  { i: "time-per-course",      x: 0, y: 21, w: 12, h: 7 }
 ];

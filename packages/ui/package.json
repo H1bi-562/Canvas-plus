@@ -1,0 +1,31 @@
+{
+  "name": "@canvasplus/ui",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    "./PriorityList": "./src/PriorityList.tsx",
+    "./themes": "./src/themes.ts",
+    "./styles.css": "./styles.css"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "react": "^19.2.0"
+  },
+  "devDependencies": {
+    "@canvasplus/eslint": "workspace:*",
+    "@canvasplus/vitest": "workspace:*",
+    "@testing-library/react": "^16.3.0",
+    "@types/react": "^19.2.0",
+    "eslint": "^9.39.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.0",
+    "vitest": "^5.0.3"
+  }
+}
