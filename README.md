@@ -132,6 +132,14 @@ The score is 55% urgency (hours until due minus the work left), 30% impact (its 
 With `?refresh=stale` it first re-syncs Canvas when the stored copy is over 5 minutes old, so a submission made on Canvas drops off the list on its own.
 The dashboard asks for that on load, on window focus, and every 5 minutes; the extension asks each time its popup opens.
 
+## Grade impact (UC14)
+
+Canvas sync also stores each course's assignment groups (grading categories) and their weights in `AssignmentGroup`, whether the course weights them (`Course.applyGroupWeights`), and the student's score on each assignment.
+Assignments Canvas leaves out of the final grade get no group, so they never count.
+The assignment details panel shows the assignment's category, its share of the final grade, and the current course grade, and lets the student type or drag a what-if score to see the projected course grade; nothing is saved.
+The math follows Canvas's current grade and lives in `apps/web/lib/gradeImpact.ts`; it ignores drop-lowest rules.
+Run `pnpm db:migrate` after pulling: the list query reads the new columns.
+
 The existing AI actions, notifications, and website-blocking controls remain presentation-only features.
 The extension does not block websites.
 Password reset needs a mail provider and reset-email integration; the UI now states that it is unconfigured instead of claiming an email was sent.

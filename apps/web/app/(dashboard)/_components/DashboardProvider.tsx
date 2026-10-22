@@ -227,7 +227,7 @@ export function useDashboard() {
 
 export default function DashboardProvider({ initialName, userId, children }: { initialName: string; userId: string; children: ReactNode }) {
   const state = useDashboardState(initialName, userId);
-  const { darkMode, signedInUser, handleLogout, logoutError, loggingOut, selectedAssignmentData, setSelectedAssignment, getPriorityColor, loadAssignments } = state;
+  const { darkMode, signedInUser, handleLogout, logoutError, loggingOut, selectedAssignmentData, setSelectedAssignment, getPriorityColor, loadAssignments, assignments } = state;
   return <DashboardContext.Provider value={state}>
     <div className={`size-full flex flex-col ${darkMode ? "bg-[var(--cp-page)]" : "bg-gray-50"}`}>
       {/* Top Bar */}
@@ -256,6 +256,7 @@ export default function DashboardProvider({ initialName, userId, children }: { i
       {/* Assignment Detail Panel */}
       <AssignmentDetails
         assignment={selectedAssignmentData}
+        assignments={assignments}
         darkMode={darkMode}
         onClose={() => setSelectedAssignment(null)}
         getPriorityColor={getPriorityColor}

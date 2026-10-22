@@ -37,9 +37,16 @@ export async function listAssignments(userId, query = {}) {
         a.missing,
         a.excused,
         a."completedAt",
+        -- UC14 grade impact inputs: the Canvas score and the grading category's weight
+        a.score,
+        a."groupID",
+        g.name         AS "groupName",
+        g.weight       AS "groupWeight",
+        COALESCE(c."applyGroupWeights", FALSE) AS "groupsWeighted",
         COALESCE(logged.seconds, 0)::INTEGER AS "loggedSeconds"
       FROM "Assignment" a
       JOIN "Course" c ON c.id = a."courseID"
+      LEFT JOIN "AssignmentGroup" g ON g.id = a."groupID"
       LEFT JOIN "AssignmentDetail" ad ON ad."assignmentID" = a.id
       -- Active study time from finished sessions on this assignment (UC24).
       LEFT JOIN LATERAL (

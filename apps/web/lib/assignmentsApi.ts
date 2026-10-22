@@ -28,6 +28,11 @@ interface AssignmentRow {
   completedAt: string | null;
   loggedSeconds: number;
   completionStatus: CompletionStatus;
+  score: number | null;
+  groupID: string | null;
+  groupName: string | null;
+  groupWeight: number | null;
+  groupsWeighted: boolean;
 }
 
 /** Computed server-side from Canvas's submission and the student's "Mark done". */
@@ -67,6 +72,15 @@ export interface Assignment {
   completionStatus: CompletionStatus;
   submittedAt: string | null;
   completedAt: string | null;
+  /** UC14: the student's Canvas score; null until graded. */
+  score: number | null;
+  /** Canvas grading category; null when the assignment does not count toward the grade. */
+  groupID: string | null;
+  groupName: string | null;
+  /** The category's weight in percent; only meaningful when groupsWeighted. */
+  groupWeight: number | null;
+  /** The course weights its categories; otherwise it grades by total points. */
+  groupsWeighted: boolean;
 }
 
 /** Canvas descriptions are HTML; the cards show plain text. */
@@ -122,7 +136,12 @@ export function toAssignment(row: AssignmentRow, now: number = Date.now()): Assi
     loggedMinutes: Math.round((row.loggedSeconds || 0) / 60),
     completionStatus: row.completionStatus || "pending",
     submittedAt: row.submittedAt,
-    completedAt: row.completedAt
+    completedAt: row.completedAt,
+    score: row.score ?? null,
+    groupID: row.groupID ?? null,
+    groupName: row.groupName ?? null,
+    groupWeight: row.groupWeight ?? null,
+    groupsWeighted: Boolean(row.groupsWeighted)
   };
 }
 
