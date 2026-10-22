@@ -9,7 +9,8 @@ const layout = vi.hoisted(() => ({
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => mocks, usePathname: () => "/assignments" }));
 vi.mock("@/lib/apiClient", async importOriginal => ({ ...await importOriginal<object>(), logout: mocks.logout }));
-vi.mock("@/lib/assignmentsApi", () => ({ fetchAssignments: async () => [] }));
+const assignmentsApi = vi.hoisted(() => ({ fetchAssignments: vi.fn(async (_refresh?: boolean) => [] as unknown[]) }));
+vi.mock("@/lib/assignmentsApi", () => assignmentsApi);
 vi.mock("@/app/(dashboard)/assignments/_api/layoutApi", () => layout);
 vi.mock("@/components/AssignmentDetails", () => ({ default: () => null }));
 afterEach(() => {
@@ -29,6 +30,13 @@ function PickDracula() {
   const { changeTheme } = useDashboard();
   return <button type="button" onClick={() => changeTheme("dracula")}>Use Dracula</button>;
 }
+
+test("assignments paint from the stored copy, then refresh from Canvas, and again on focus", async () => {
+  render(<DashboardProvider initialName="Test" userId="u1">Private content</DashboardProvider>);
+  await waitFor(() => expect(assignmentsApi.fetchAssignments.mock.calls).toEqual([[false], [true]]));
+  fireEvent(window, new Event("focus"));
+  await waitFor(() => expect(assignmentsApi.fetchAssignments).toHaveBeenCalledTimes(3));
+});
 
 test("failed logout stays signed in and offers a retry", async () => {
   mocks.logout.mockRejectedValueOnce(new Error("Network unavailable"));

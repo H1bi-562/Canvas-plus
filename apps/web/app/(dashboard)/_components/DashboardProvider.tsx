@@ -7,7 +7,7 @@ import { Assignment, fetchAssignments } from "@/lib/assignmentsApi";
 import { ApiError, logout } from "@/lib/apiClient";
 import { fetchLayout, saveTheme, type LayoutItem, type LayoutResponse } from "@/app/(dashboard)/assignments/_api/layoutApi";
 import { clearPreferences, readPreferences, subscribePreferences, writePreferences } from "@/lib/preferencesCache";
-import { DEFAULT_THEME, getTheme, type ThemeId } from "@/lib/themes";
+import { DEFAULT_THEME, getTheme, type ThemeId } from "@canvasplus/ui/themes";
 import { useRouter } from "next/navigation";
 
 type ViewType = "assignments" | "calendar" | "focus" | "analytics" | "profile" | "auth";
@@ -61,22 +61,40 @@ function useDashboardState(initialName: string, userId: string) {
     router.refresh();
   }, [router, userId]);
 
-  const loadAssignments = useCallback(async () => {
+  /** Resolves true when the list loaded. refresh lets the server re-sync a stale Canvas copy first. */
+  const loadAssignments = useCallback(async (refresh = true) => {
     setAssignmentsLoading(true);
     setAssignmentsError(null);
     try {
-      setAssignments(await fetchAssignments());
+      const next = await fetchAssignments(refresh);
+      // Keep the old array when nothing changed, so a background refresh re-renders nothing.
+      setAssignments((prev) => JSON.stringify(prev) === JSON.stringify(next) ? prev : next);
+      return true;
     } catch (err) {
       // The auth cookie expired or was revoked: back to the login screen.
-      if (err instanceof ApiError && err.status === 401) return signOutLocally();
-      setAssignmentsError(err instanceof ApiError ? err.message : "Could not load assignments.");
+      if (err instanceof ApiError && err.status === 401) signOutLocally();
+      else setAssignmentsError(err instanceof ApiError ? err.message : "Could not load assignments.");
+      return false;
     } finally {
       setAssignmentsLoading(false);
     }
   }, [signOutLocally]);
 
+  // UC15 – keep submission status, and so the priority list, current without a manual
+  // sync: show the stored copy at once, then let the server re-sync it from Canvas when
+  // it is over 5 minutes old. Again on focus (back from submitting on Canvas) and every
+  // 5 minutes while visible; each is one cheap request while the copy is fresh.
   useEffect(() => {
-    void loadAssignments();
+    void loadAssignments(false).then((ok) => ok && loadAssignments());
+    const refresh = () => {
+      if (document.visibilityState === "visible") void loadAssignments();
+    };
+    window.addEventListener("focus", refresh);
+    const timer = window.setInterval(refresh, 5 * 60 * 1000);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      window.clearInterval(timer);
+    };
   }, [loadAssignments]);
 
   // ── Theme + layout sync ────────────────────────────────────────────────────

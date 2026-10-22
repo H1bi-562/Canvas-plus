@@ -26,7 +26,7 @@ import { saveLayout, resetLayout, type LayoutItem, type LayoutResponse } from "@
 import { fetchAnalyticsSummary, localDateKey, type AnalyticsSummary } from "@/lib/analyticsApi";
 import { ApiError } from "@/lib/apiClient";
 import type { Assignment } from "@/lib/assignmentsApi";
-import { THEMES, type ThemeId } from "@/lib/themes";
+import { THEMES, type ThemeId } from "@canvasplus/ui/themes";
 
 const Grid = WidthProvider(GridLayout);
 

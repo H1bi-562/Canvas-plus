@@ -2,7 +2,7 @@
 // UC22 – client for /api/layout (services/dashboardLayout.js).
 
 import { apiRequest } from "@/lib/apiClient";
-import type { ThemeId } from "@/lib/themes";
+import type { ThemeId } from "@canvasplus/ui/themes";
 
 /** One widget's place on the 12-column home grid (react-grid-layout's shape). */
 export interface LayoutItem {
