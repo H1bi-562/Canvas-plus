@@ -111,7 +111,7 @@ test("PAT connection and assignment sync", async (t) => {
 
   const assignmentsFor = async (userID) => (await pool.query(
     `SELECT a.*, c."canvasCourseID", c."courseCode", c.name AS "courseName",
-            c.department, c.semester
+            c.department, c.semester, c."applyGroupWeights"
        FROM "Assignment" a JOIN "Course" c ON c.id = a."courseID"
       WHERE a."userID" = $1
       ORDER BY a."canvasAssignmentID"`,
@@ -189,6 +189,24 @@ test("PAT connection and assignment sync", async (t) => {
     assert.equal(progress.completionStatus(byID["5002"]), "submitted");
     assert.equal(progress.completionStatus(byID["6001"]), "late");
     assert.equal(progress.completionStatus(byID["5003"]), "excused");
+  });
+
+  await t.test("stores grading categories, weights, and scores (UC14)", async () => {
+    const byID = Object.fromEntries((await assignmentsFor(alice)).map((r) => [r.canvasAssignmentID, r]));
+    const groups = (await pool.query(
+      `SELECT g.id, g.name, g.weight FROM "AssignmentGroup" g JOIN "Course" c ON c.id = g."courseID"
+        WHERE c."canvasBaseURL" = $1 ORDER BY g.name`,
+      [mock.baseURL]
+    )).rows;
+    assert.deepEqual(groups.map((g) => [g.name, g.weight]), [["Deliverables", 70], ["Weekly Reviews", 30]]);
+    assert.equal(byID["5001"].applyGroupWeights, true);
+    assert.equal(byID["6001"].applyGroupWeights, false);
+    assert.equal(byID["5001"].groupID, groups[1].id);
+    assert.equal(byID["5002"].groupID, groups[0].id);
+    assert.equal(byID["5001"].score, null, "ungraded");
+    assert.equal(byID["5002"].score, 2);
+    assert.equal(byID["5003"].groupID, null, "omitted from the final grade");
+    assert.equal(byID["6001"].groupID, null, "course without groups");
   });
 
   await t.test("only reads from Canvas", async () => {

@@ -16,18 +16,19 @@ export async function storeAssignments(userID, baseURL, byCourse) {
   try {
     await client.query("BEGIN");
 
-    for (const { course, assignments } of byCourse) {
+    for (const { course, groups = [], assignments } of byCourse) {
       // Course rows are shared across students, so only shared metadata is
       // written here -- never "grade".
       const { rows: [courseRow] } = await client.query(
         `INSERT INTO "Course"
-           (name, "courseCode", department, semester, "canvasBaseURL", "canvasCourseID")
-         VALUES ($1, $2, $3, $4, $5, $6)
+           (name, "courseCode", department, semester, "canvasBaseURL", "canvasCourseID", "applyGroupWeights")
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
          ON CONFLICT ("canvasBaseURL", "canvasCourseID") DO UPDATE SET
            name         = EXCLUDED.name,
            "courseCode" = EXCLUDED."courseCode",
            department   = COALESCE(EXCLUDED.department, "Course".department),
            semester     = COALESCE(EXCLUDED.semester, "Course".semester),
+           "applyGroupWeights" = EXCLUDED."applyGroupWeights",
            "updated_at" = NOW()
          RETURNING id`,
         [
@@ -36,9 +37,24 @@ export async function storeAssignments(userID, baseURL, byCourse) {
           departmentFrom(course.course_code),
           course.term?.name || null,
           baseURL,
-          String(course.id)
+          String(course.id),
+          Boolean(course.apply_assignment_group_weights)
         ]
       );
+
+      // UC14: the course's grading categories, shared like the course itself.
+      const groupIDs = new Map();
+      for (const group of groups) {
+        const { rows: [groupRow] } = await client.query(
+          `INSERT INTO "AssignmentGroup" ("courseID", "canvasGroupID", name, weight)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT ("courseID", "canvasGroupID") DO UPDATE SET
+             name = EXCLUDED.name, weight = EXCLUDED.weight
+           RETURNING id`,
+          [courseRow.id, String(group.id), group.name, Number(group.group_weight) || 0]
+        );
+        groupIDs.set(String(group.id), groupRow.id);
+      }
 
       for (const a of assignments) {
         // Canvas's view of the submission is refreshed every sync. The student's
@@ -50,8 +66,8 @@ export async function storeAssignments(userID, baseURL, byCourse) {
           `INSERT INTO "Assignment"
              ("userID", "courseID", title, description, points, "dueAt", "availableUntil",
               "canvasAssignmentID", "htmlURL", "syncedAt",
-              "submittedAt", "submissionState", late, missing, excused)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), $10, $11, $12, $13, $14)
+              "submittedAt", "submissionState", late, missing, excused, score, "groupID")
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), $10, $11, $12, $13, $14, $15, $16)
            ON CONFLICT ("userID", "canvasAssignmentID") DO UPDATE SET
              "courseID"        = EXCLUDED."courseID",
              title             = EXCLUDED.title,
@@ -65,7 +81,9 @@ export async function storeAssignments(userID, baseURL, byCourse) {
              "submissionState" = EXCLUDED."submissionState",
              late              = EXCLUDED.late,
              missing           = EXCLUDED.missing,
-             excused           = EXCLUDED.excused
+             excused           = EXCLUDED.excused,
+             score             = EXCLUDED.score,
+             "groupID"         = EXCLUDED."groupID"
            RETURNING (xmax = 0) AS inserted`,
           [
             userID,
@@ -81,7 +99,10 @@ export async function storeAssignments(userID, baseURL, byCourse) {
             sub.workflow_state || null,
             sub.late ?? null,
             sub.missing ?? null,
-            sub.excused ?? null
+            sub.excused ?? null,
+            sub.score ?? null,
+            // No group for work Canvas leaves out of the final grade, so it never counts.
+            a.omit_from_final_grade ? null : groupIDs.get(String(a.assignment_group_id)) ?? null
           ]
         );
         if (row.inserted) created += 1; else updated += 1;

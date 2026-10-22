@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, uuid, text, timestamp, boolean, integer, jsonb, uniqueIndex, index, check } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, boolean, integer, doublePrecision, jsonb, uniqueIndex, index, check } from "drizzle-orm/pg-core";
 
 const id = () => uuid("id").defaultRandom().primaryKey();
 const time = (name: string) => timestamp(name, { withTimezone: true });
@@ -42,8 +42,16 @@ export const calendarConfig = pgTable("CalendarConfig", {
 export const course = pgTable("Course", {
   id: id(), name: text("name").notNull(), department: text("department"), semester: text("semester"),
   canvasBaseURL: text("canvasBaseURL"), canvasCourseID: text("canvasCourseID"), courseCode: text("courseCode"),
+  // UC14: Canvas's apply_assignment_group_weights; false grades by total points.
+  applyGroupWeights: boolean("applyGroupWeights"),
   created_at: time("created_at").defaultNow(), updated_at: time("updated_at").defaultNow()
 }, t => [uniqueIndex("ux_course_canvas").on(t.canvasBaseURL, t.canvasCourseID)]);
+
+// UC14: a course's grading categories ("assignment groups" in Canvas) and their weights in percent.
+export const assignmentGroup = pgTable("AssignmentGroup", {
+  id: id(), courseID: uuid("courseID").notNull().references(() => course.id, { onDelete: "cascade" }),
+  canvasGroupID: text("canvasGroupID").notNull(), name: text("name").notNull(), weight: doublePrecision("weight").notNull().default(0)
+}, t => [uniqueIndex("ux_assignment_group_canvas").on(t.courseID, t.canvasGroupID)]);
 
 export const assignment = pgTable("Assignment", {
   id: id(), userID: uuid("userID").notNull().references(() => user.id, { onDelete: "cascade" }),
@@ -52,7 +60,9 @@ export const assignment = pgTable("Assignment", {
   dueAt: time("dueAt"), availableUntil: time("availableUntil"), canvasAssignmentID: text("canvasAssignmentID"),
   htmlURL: text("htmlURL"), syncedAt: time("syncedAt"), submittedAt: time("submittedAt"),
   submissionState: text("submissionState"), late: boolean("late"), missing: boolean("missing"),
-  excused: boolean("excused"), completedAt: time("completedAt")
+  excused: boolean("excused"), completedAt: time("completedAt"),
+  // UC14: the student's Canvas score and grading category (null when it does not count toward the grade).
+  score: doublePrecision("score"), groupID: uuid("groupID").references(() => assignmentGroup.id, { onDelete: "set null" })
 }, t => [uniqueIndex("ux_assignment_user_canvas").on(t.userID, t.canvasAssignmentID), index("assignment_course").on(t.courseID), index("assignment_due").on(t.dueAt)]);
 
 export const assignmentDetail = pgTable("AssignmentDetail", {

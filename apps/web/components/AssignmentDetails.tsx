@@ -11,10 +11,13 @@ import {
 import { ApiError } from "@/lib/apiClient";
 import CompletionBadge from "@/components/CompletionBadge";
 import EstimateEditor from "@/components/EstimateEditor";
+import GradeImpact from "@/components/GradeImpact";
 
 
 interface AssignmentDetailsProps {
   assignment: Assignment | undefined;
+  /** Every assignment, so the grade impact panel can see the rest of the course. */
+  assignments: Assignment[];
   darkMode: boolean;
   onClose: () => void;
   getPriorityColor: (priority: string) => string;
@@ -24,6 +27,7 @@ interface AssignmentDetailsProps {
 
 export default function AssignmentDetails({
   assignment,
+  assignments,
   darkMode,
   onClose,
   getPriorityColor,
@@ -189,6 +193,9 @@ export default function AssignmentDetails({
               {doneError && <p role="alert" className="text-sm text-red-600">{doneError}</p>}
             </div>
 
+            {/* How this assignment moves the course grade, with a what-if score (UC14) */}
+            <GradeImpact key={assignment.id} assignment={assignment} assignments={assignments} darkMode={darkMode} />
+
             {/* Description */}
             <div>
               <h3 className={`font-medium mb-2 ${darkMode ? "text-white" : "text-gray-900"}`}>Description</h3>
@@ -218,10 +225,6 @@ export default function AssignmentDetails({
 
             <button className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
               <span>Break into Tasks</span>
-            </button>
-
-            <button className="w-full bg-orange-600 hover:bg-orange-700 text-white py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
-              <span>Grade Impact</span>
             </button>
           </div>
         </div>

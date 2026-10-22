@@ -135,7 +135,9 @@ async function syncAssignments(userID) {
       // include[]=submission embeds the student's own submission (on-time rate, UC21).
       { order_by: "due_at", "include[]": "submission" }
     );
-    byCourse.push({ course, assignments });
+    // UC14: grading categories and their weights, for the grade impact panel.
+    const groups = await canvasGetAll(baseURL, token, `/api/v1/courses/${course.id}/assignment_groups`);
+    byCourse.push({ course, groups, assignments });
   }
 
   return storeAssignments(userID, baseURL, byCourse);
