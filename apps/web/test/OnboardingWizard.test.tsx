@@ -238,3 +238,32 @@ test("a failed Finish stays on the wizard with an error", async () => {
   expect((await screen.findByRole("alert")).textContent).toBe("Could not save your progress. Try again.");
   expect(router.replace).not.toHaveBeenCalled();
 });
+
+// ── Final-review fixes ───────────────────────────────────────────────────
+test("a double click saves the step once and shows the very next step", async () => {
+  canvas.fetchCanvasStatus.mockResolvedValueOnce({ connected: false, configured: false });
+  wizard(state({}, "canvas"));
+  const later = await screen.findByRole("button", { name: "I'll connect later" });
+  fireEvent.click(later);
+  fireEvent.click(later);
+  await waitFor(() => expect(screen.getByRole("heading", { name: "Google Calendar" })).toBeTruthy());
+  expect(api.saveOnboardingStep).toHaveBeenCalledTimes(1);
+});
+
+test("after Canvas rejects the stored token, the user can paste a new one", async () => {
+  canvas.syncAssignments.mockRejectedValueOnce(new ApiError("Canvas no longer accepts the stored token. Reconnect your Canvas account.", 409));
+  wizard(state({ canvas: "done", google: "skipped" }, "sync"));
+  fireEvent.click(await screen.findByRole("button", { name: "Run first sync" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Back to Canvas" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Use a different token" }));
+  fireEvent.change(screen.getByLabelText("Canvas access token"), { target: { value: "fake-new-token" } });
+  fireEvent.click(screen.getByRole("button", { name: "Connect Canvas" }));
+  await waitFor(() => expect(canvas.connectWithToken).toHaveBeenCalledWith("fake-new-token"));
+});
+
+test("moving to the next step puts focus on its heading", async () => {
+  wizard(state({}, "canvas"));
+  fireEvent.click(await screen.findByRole("button", { name: "Continue" }));
+  const heading = await screen.findByRole("heading", { name: "Google Calendar" });
+  await waitFor(() => expect(document.activeElement).toBe(heading));
+});

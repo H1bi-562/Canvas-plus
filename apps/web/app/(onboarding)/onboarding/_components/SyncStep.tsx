@@ -27,7 +27,7 @@ function SourceSwitch({ label, on, onToggle }: { label: string; on: boolean; onT
   );
 }
 
-export default function SyncStep({ darkMode, onDone, onBackToCanvas }: SyncStepProps) {
+export default function SyncStep({ darkMode, onDone, saving, onBackToCanvas }: SyncStepProps) {
   const [canvasConnected, setCanvasConnected] = useState<boolean | null>(null);
   const [googleConnected, setGoogleConnected] = useState(false);
   const [hidden, setHidden] = useState<CalendarSource[]>([]);
@@ -104,7 +104,7 @@ export default function SyncStep({ darkMode, onDone, onBackToCanvas }: SyncStepP
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <button type="button" onClick={() => void onDone(result ? "done" : "skipped")} disabled={syncing} className={s.primary}>Continue</button>
+        <button type="button" onClick={() => void onDone(result ? "done" : "skipped")} disabled={syncing || saving} className={s.primary}>Continue</button>
         {error && canvasConnected && <button type="button" onClick={onBackToCanvas} className={s.secondary}>Back to Canvas</button>}
       </div>
 
