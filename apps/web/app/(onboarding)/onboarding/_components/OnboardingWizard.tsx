@@ -4,14 +4,17 @@
 // student who leaves comes back to the first unfinished step on any device.
 
 import { useLayoutEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import { DEFAULT_THEME, getTheme, type ThemeId } from "@canvasplus/ui/themes";
 import { ONBOARDING_STEPS, type OnboardingState, type OnboardingStep, type StepStatus } from "@/lib/onboarding";
-import { saveOnboardingStep } from "@/lib/onboardingApi";
+import { completeOnboarding, saveOnboardingStep } from "@/lib/onboardingApi";
 import { readPreferences } from "@/lib/preferencesCache";
 import CanvasStep from "./CanvasStep";
 import GoogleStep from "./GoogleStep";
 import SyncStep from "./SyncStep";
+import TourStep from "./TourStep";
+import { applyThemeChoice } from "../_lib/theme";
 
 interface OnboardingWizardProps {
   userId: string;
@@ -41,15 +44,11 @@ function startIndex(initialState: OnboardingState, googleResult: OnboardingWizar
   return ONBOARDING_STEPS.indexOf(initialState.nextStep ?? "tour");
 }
 
-// Placeholder until the real step components exist.
-function PlaceholderStep({ onDone }: StepProps) {
-  return <button type="button" onClick={() => void onDone("done")} className="bg-blue-600 text-white py-2.5 px-5 rounded-lg">Continue</button>;
-}
-
 export default function OnboardingWizard({ userId, initialState, googleResult }: OnboardingWizardProps) {
   const [index, setIndex] = useState(() => startIndex(initialState, googleResult));
   const [error, setError] = useState<string | null>(null);
   const [themeId, setThemeId] = useState<ThemeId>(DEFAULT_THEME);
+  const router = useRouter();
 
   // This browser's saved theme, read after hydration so the server and first client render agree.
   useLayoutEffect(() => {
@@ -72,6 +71,19 @@ export default function OnboardingWizard({ userId, initialState, googleResult }:
       return;
     }
     setIndex((i) => Math.min(i + 1, ONBOARDING_STEPS.length - 1));
+  };
+
+  /** Finish: record the tour and the finish time, then open the dashboard (outside the try, like redirect). */
+  const finish = async () => {
+    setError(null);
+    try {
+      await completeOnboarding();
+    } catch {
+      setError(SAVE_ERROR);
+      return;
+    }
+    router.replace("/assignments");
+    router.refresh();
   };
 
   const goBack = () => {
@@ -110,7 +122,10 @@ export default function OnboardingWizard({ userId, initialState, googleResult }:
       {step === "canvas" && <CanvasStep key="canvas" {...stepProps} />}
       {step === "google" && <GoogleStep key="google" {...stepProps} callbackResult={googleResult} />}
       {step === "sync" && <SyncStep key="sync" {...stepProps} onBackToCanvas={() => { setError(null); setIndex(0); }} />}
-      {step === "tour" && <PlaceholderStep key="tour" {...stepProps} />}
+      {step === "tour" && (
+        <TourStep key="tour" darkMode={darkMode} themeId={themeId} onFinish={finish}
+          onThemeChange={(id) => { setThemeId(id); void applyThemeChoice(userId, id); }} />
+      )}
 
       {error && (
         <div role="alert" className={`flex items-start gap-2 mt-4 p-3 rounded-lg text-sm ${

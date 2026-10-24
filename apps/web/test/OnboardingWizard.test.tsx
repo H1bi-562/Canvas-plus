@@ -26,6 +26,11 @@ vi.mock("@/lib/onboardingApi", () => api);
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
 vi.mock("@/app/(dashboard)/settings/_api/canvasApi", () => canvas);
 vi.mock("@/lib/googleCalendarApi", () => google);
+const layout = vi.hoisted(() => ({
+  saveTheme: vi.fn(async (theme: string) => ({ theme, layout: [] as unknown[], isDefault: true, updatedAt: "2026-10-24T12:00:00Z" })),
+  fetchLayout: vi.fn()
+}));
+vi.mock("@/app/(dashboard)/assignments/_api/layoutApi", () => layout);
 
 afterEach(() => {
   cleanup();
@@ -185,4 +190,51 @@ test("the Google events switch appears once Google is connected", async () => {
   google.fetchGoogleStatus.mockResolvedValueOnce({ configured: true, connected: true });
   wizard(state({ canvas: "done", google: "done" }, "sync"));
   expect(await screen.findByRole("switch", { name: "Show Google events" })).toBeTruthy();
+});
+
+// ── Tour, theme and Finish ───────────────────────────────────────────────
+const atTour = () => wizard(state({ canvas: "done", google: "skipped", sync: "done" }, "tour"));
+
+test("the tour walks six cards and Skip tour jumps to the theme picker", () => {
+  atTour();
+  expect(screen.getByText("Card 1 of 6")).toBeTruthy();
+  for (let i = 0; i < 5; i++) fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  expect(screen.getByText("Card 6 of 6")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Previous" }));
+  expect(screen.getByText("Card 5 of 6")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Skip tour" }));
+  expect(screen.getByRole("heading", { name: "Pick a theme" })).toBeTruthy();
+});
+
+test("Next on the last card opens the theme picker", () => {
+  atTour();
+  for (let i = 0; i < 6; i++) fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  expect(screen.getByRole("heading", { name: "Pick a theme" })).toBeTruthy();
+});
+
+test("picking a theme applies and saves it", async () => {
+  atTour();
+  fireEvent.click(screen.getByRole("button", { name: "Skip tour" }));
+  fireEvent.click(screen.getByRole("radio", { name: "Dracula" }));
+  await waitFor(() => expect(layout.saveTheme).toHaveBeenCalledWith("dracula"));
+  expect(document.documentElement.dataset.theme).toBe("dracula");
+  expect(screen.getByRole("radio", { name: "Dracula" }).getAttribute("aria-checked")).toBe("true");
+});
+
+test("Finish completes onboarding and opens the dashboard", async () => {
+  atTour();
+  fireEvent.click(screen.getByRole("button", { name: "Skip tour" }));
+  fireEvent.click(screen.getByRole("button", { name: "Finish" }));
+  await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/assignments"));
+  expect(api.completeOnboarding).toHaveBeenCalled();
+  expect(router.refresh).toHaveBeenCalled();
+});
+
+test("a failed Finish stays on the wizard with an error", async () => {
+  api.completeOnboarding.mockRejectedValueOnce(new Error("offline"));
+  atTour();
+  fireEvent.click(screen.getByRole("button", { name: "Skip tour" }));
+  fireEvent.click(screen.getByRole("button", { name: "Finish" }));
+  expect((await screen.findByRole("alert")).textContent).toBe("Could not save your progress. Try again.");
+  expect(router.replace).not.toHaveBeenCalled();
 });
