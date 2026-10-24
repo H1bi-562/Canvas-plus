@@ -34,6 +34,11 @@
 - **Allow-listed input.** Only the four known step names and two statuses can be stored. Anything else is rejected with a 400.
 - **Same-site redirects only.** Google's consent screen can only send the student back to a CanvasPlus page.
 
+## Rollout: migrate first
+- **Apply migration `0002` to a database before this code runs against it.** The existing Better Auth sign-up hook inserts a `Config` row, and Drizzle names every `Config` column in that insert. On a database without the two new columns, **sign-up fails** and "Run setup again" returns an error.
+- **Migrating first is safe:** the columns are additive with defaults, so code that doesn't know about them keeps working.
+- **Order for the shared database:** the team agrees → `pnpm db:migrate` → merge the PR.
+
 ## Testing
 - **Database tests** run against a separate test database, never the shared one. They cover:
   - new accounts

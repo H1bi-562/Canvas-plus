@@ -506,7 +506,7 @@ test("Finish completes onboarding and opens the dashboard", async () => { /* cli
   - Settings → Run setup again restarts the wizard at step 1, with Canvas still shown as connected
   - `/onboarding` after finishing redirects to `/assignments`
 - [ ] **Step 3: Checkpoint.** On approval: `git commit -m "Document the onboarding wizard"`.
-- [ ] **Step 4 (Nathan, after the team agrees): migrate the shared database and open the PR.**
+- [ ] **Step 4 (Nathan, after the team agrees): migrate the shared database and open the PR.** Migrate **before** this code runs against any database. Sign-up's `Config` insert names the new columns, so running unmigrated breaks sign-up (found in the final review). The PR description must say this.
   - Tell teammates that everyone will see the wizard once.
   - Then run `pnpm db:migrate`. Expected: it applies `0002_*` without errors.
   - Then push the branch and open a PR to `main`.
