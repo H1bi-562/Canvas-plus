@@ -1,6 +1,7 @@
 import { Eye, EyeOff } from "lucide-react";
 import CanvasConnection from "@/app/(dashboard)/settings/_components/CanvasConnection";
 import GoogleConnection from "@/app/(dashboard)/settings/_components/GoogleConnection";
+import SetupCard from "@/app/(dashboard)/settings/_components/SetupCard";
 
 interface SettingsProps {
   darkMode: boolean;
@@ -88,6 +89,9 @@ export default function Settings({
 
           {/* Google Calendar — read-only import shown on the Calendar page */}
           <GoogleConnection darkMode={darkMode} />
+
+          {/* Setup — re-run the first-run wizard (UC23) */}
+          <SetupCard darkMode={darkMode} />
 
           {/* AI Integration */}
           <div className={`rounded-lg shadow-sm p-6 ${darkMode ? "bg-[var(--cp-card)]" : "bg-white"}`}>
