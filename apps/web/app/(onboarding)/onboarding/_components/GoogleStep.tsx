@@ -15,7 +15,7 @@ interface GoogleStepProps extends StepProps {
   callbackResult: "connected" | "error" | null;
 }
 
-export default function GoogleStep({ darkMode, onDone, callbackResult }: GoogleStepProps) {
+export default function GoogleStep({ darkMode, onDone, saving, callbackResult }: GoogleStepProps) {
   const [status, setStatus] = useState<GoogleStatus | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(callbackResult === "error" ? "Google didn't connect. You can try again or skip." : null);
@@ -40,7 +40,7 @@ export default function GoogleStep({ darkMode, onDone, callbackResult }: GoogleS
     }
   };
 
-  const skip = <button type="button" onClick={() => void onDone("skipped")} disabled={busy} className={s.secondary}>Skip</button>;
+  const skip = <button type="button" onClick={() => void onDone("skipped")} disabled={busy || saving} className={s.secondary}>Skip</button>;
 
   return (
     <>
@@ -64,13 +64,13 @@ export default function GoogleStep({ darkMode, onDone, callbackResult }: GoogleS
             <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
             <span>Google Calendar is connected</span>
           </div>
-          <button type="button" onClick={() => void onDone("done")} className={s.primary}>Continue</button>
+          <button type="button" onClick={() => void onDone("done")} disabled={saving} className={s.primary}>Continue</button>
         </>
       )}
 
       {status?.configured && !status.connected && (
         <div className="flex flex-wrap gap-3">
-          <button type="button" onClick={() => void handleConnect()} disabled={busy} className={s.primary}>
+          <button type="button" onClick={() => void handleConnect()} disabled={busy || saving} className={s.primary}>
             {busy && <Loader2 className="w-4 h-4 animate-spin" />}
             Connect Google
           </button>

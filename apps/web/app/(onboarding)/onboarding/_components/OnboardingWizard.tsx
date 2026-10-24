@@ -3,7 +3,7 @@
 // UC23 – the first-run setup wizard. Four steps, each saved as it is finished, so a
 // student who leaves comes back to the first unfinished step on any device.
 
-import { useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import { DEFAULT_THEME, getTheme, type ThemeId } from "@canvasplus/ui/themes";
@@ -28,6 +28,8 @@ export interface StepProps {
   darkMode: boolean;
   /** Save this step as done or skipped, then move on. Rejections are shown by the wizard. */
   onDone: (status: StepStatus) => Promise<void>;
+  /** A save is in flight: steps disable their buttons so a double click cannot skip a step. */
+  saving: boolean;
 }
 
 const TITLES: Record<OnboardingStep, string> = {
@@ -48,6 +50,11 @@ export default function OnboardingWizard({ userId, initialState, googleResult }:
   const [index, setIndex] = useState(() => startIndex(initialState, googleResult));
   const [error, setError] = useState<string | null>(null);
   const [themeId, setThemeId] = useState<ThemeId>(DEFAULT_THEME);
+  const [saving, setSaving] = useState(false);
+  // A ref as well as state: two clicks in the same frame both still see saving === false.
+  const savingRef = useRef(false);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const firstRender = useRef(true);
   const router = useRouter();
 
   // This browser's saved theme, read after hydration so the server and first client render agree.
@@ -62,24 +69,42 @@ export default function OnboardingWizard({ userId, initialState, googleResult }:
   const step = ONBOARDING_STEPS[index];
   const darkMode = getTheme(themeId).mode === "dark";
 
+  // When the step changes, move focus to its heading so keyboard and screen-reader users keep their place.
+  useEffect(() => {
+    if (firstRender.current) { firstRender.current = false; return; }
+    headingRef.current?.focus();
+  }, [index]);
+
   const record = async (status: StepStatus) => {
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
     setError(null);
     try {
       await saveOnboardingStep(step, status);
     } catch {
       setError(SAVE_ERROR);
       return;
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
     }
-    setIndex((i) => Math.min(i + 1, ONBOARDING_STEPS.length - 1));
+    // Advance from the step that was saved, never from wherever a second click left the index.
+    setIndex(Math.min(ONBOARDING_STEPS.indexOf(step) + 1, ONBOARDING_STEPS.length - 1));
   };
 
   /** Finish: record the tour and the finish time, then open the dashboard (outside the try, like redirect). */
   const finish = async () => {
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
     setError(null);
     try {
       await completeOnboarding();
     } catch {
       setError(SAVE_ERROR);
+      savingRef.current = false;
+      setSaving(false);
       return;
     }
     router.replace("/assignments");
@@ -87,11 +112,12 @@ export default function OnboardingWizard({ userId, initialState, googleResult }:
   };
 
   const goBack = () => {
+    if (savingRef.current) return;
     setError(null);
     setIndex((i) => Math.max(i - 1, 0));
   };
 
-  const stepProps: StepProps = { darkMode, onDone: record };
+  const stepProps: StepProps = { darkMode, onDone: record, saving };
 
   // ── Styling (matches the Settings cards) ────────────────────────────────
   const card = `w-full max-w-2xl rounded-lg shadow-sm p-6 sm:p-8 ${darkMode ? "bg-[var(--cp-card)]" : "bg-white"}`;
@@ -106,7 +132,7 @@ export default function OnboardingWizard({ userId, initialState, googleResult }:
           Step {index + 1} of {ONBOARDING_STEPS.length}
         </p>
         {index > 0 && (
-          <button type="button" onClick={goBack} className={`inline-flex items-center gap-1 text-sm ${darkMode ? "text-gray-300 hover:text-white" : "text-gray-600 hover:text-gray-900"}`}>
+          <button type="button" onClick={goBack} disabled={saving} className={`inline-flex items-center gap-1 text-sm ${darkMode ? "text-gray-300 hover:text-white" : "text-gray-600 hover:text-gray-900"}`}>
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
         )}
@@ -117,7 +143,7 @@ export default function OnboardingWizard({ userId, initialState, googleResult }:
         ))}
       </div>
 
-      <h1 id="onboarding-title" className={heading}>{TITLES[step]}</h1>
+      <h1 id="onboarding-title" ref={headingRef} tabIndex={-1} className={`${heading} focus:outline-none`}>{TITLES[step]}</h1>
 
       {step === "canvas" && <CanvasStep key="canvas" {...stepProps} />}
       {step === "google" && <GoogleStep key="google" {...stepProps} callbackResult={googleResult} />}

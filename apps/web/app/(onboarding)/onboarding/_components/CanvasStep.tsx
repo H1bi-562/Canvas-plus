@@ -13,7 +13,7 @@ import { stepStyles } from "./stepStyles";
 
 const errorText = (err: unknown) => (err instanceof ApiError ? err.message : "Something went wrong. Try again.");
 
-export default function CanvasStep({ darkMode, onDone }: StepProps) {
+export default function CanvasStep({ darkMode, onDone, saving }: StepProps) {
   const [status, setStatus] = useState<CanvasStatus | null>(null);
   const [token, setToken] = useState("");
   const [showToken, setShowToken] = useState(false);
@@ -21,6 +21,8 @@ export default function CanvasStep({ darkMode, onDone }: StepProps) {
   const [error, setError] = useState<string | null>(null);
   // The server has no CANVAS_BASE_URL, so no token can work here.
   const [unavailable, setUnavailable] = useState(false);
+  // Connected, but the student wants to paste a new token (e.g. after Canvas rejected the stored one).
+  const [replacing, setReplacing] = useState(false);
   const s = stepStyles(darkMode);
 
   useEffect(() => {
@@ -36,7 +38,7 @@ export default function CanvasStep({ darkMode, onDone }: StepProps) {
   }, []);
 
   const handleConnect = async () => {
-    if (busy || !token.trim()) return;
+    if (busy || saving || !token.trim()) return;
     setBusy(true);
     setError(null);
     try {
@@ -44,6 +46,7 @@ export default function CanvasStep({ darkMode, onDone }: StepProps) {
       setToken("");
       setShowToken(false);
       setStatus(next);
+      setReplacing(false);
     } catch (err) {
       if (err instanceof ApiError && err.status === 503) setUnavailable(true);
       else setError(errorText(err));
@@ -54,18 +57,21 @@ export default function CanvasStep({ darkMode, onDone }: StepProps) {
     setBusy(false);
   };
 
-  const skip = <button type="button" onClick={() => void onDone("skipped")} disabled={busy} className={s.secondary}>I&apos;ll connect later</button>;
+  const skip = <button type="button" onClick={() => void onDone("skipped")} disabled={busy || saving} className={s.secondary}>I&apos;ll connect later</button>;
 
   if (status === null) return <p className={s.muted}>Checking your Canvas connection…</p>;
 
-  if (status.connected) {
+  if (status.connected && !replacing) {
     return (
       <>
         <div className={`${s.okBox} mb-6`}>
           <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
           <span>Connected as {status.canvasName || "your Canvas account"}</span>
         </div>
-        <button type="button" onClick={() => void onDone("done")} className={s.primary}>Continue</button>
+        <div className="flex flex-wrap gap-3">
+          <button type="button" onClick={() => void onDone("done")} disabled={saving} className={s.primary}>Continue</button>
+          <button type="button" onClick={() => setReplacing(true)} disabled={saving} className={s.secondary}>Use a different token</button>
+        </div>
       </>
     );
   }
@@ -110,7 +116,7 @@ export default function CanvasStep({ darkMode, onDone }: StepProps) {
         </button>
       </div>
       <div className="flex flex-wrap gap-3">
-        <button type="button" onClick={() => void handleConnect()} disabled={busy || !token.trim()} className={s.primary}>
+        <button type="button" onClick={() => void handleConnect()} disabled={busy || saving || !token.trim()} className={s.primary}>
           {busy && <Loader2 className="w-4 h-4 animate-spin" />}
           Connect Canvas
         </button>
