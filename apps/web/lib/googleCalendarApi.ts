@@ -40,13 +40,16 @@ export function disconnectGoogle() {
   return apiRequest<{ message: string; revokedAtGoogle: boolean }>("/api/google", "DELETE");
 }
 
-/** Leaves the page for Google's consent screen; comes back to /settings?google=connected|error. */
-export async function connectGoogle() {
+/**
+ * Leaves the page for Google's consent screen; comes back to /settings?google=connected|error
+ * unless a caller (the onboarding wizard) passes its own same-site return paths.
+ */
+export async function connectGoogle(returnTo = { callbackURL: "/settings?google=connected", errorCallbackURL: "/settings?google=error" }) {
   const result = await authClient.linkSocial({
     provider: "google",
     scopes: [GOOGLE_CALENDAR_SCOPE],
-    callbackURL: "/settings?google=connected",
-    errorCallbackURL: "/settings?google=error"
+    callbackURL: returnTo.callbackURL,
+    errorCallbackURL: returnTo.errorCallbackURL
   });
   if (result.error) throw new Error(result.error.message || "Could not start the Google connection.");
 }

@@ -9,6 +9,8 @@ import { DEFAULT_THEME, getTheme, type ThemeId } from "@canvasplus/ui/themes";
 import { ONBOARDING_STEPS, type OnboardingState, type OnboardingStep, type StepStatus } from "@/lib/onboarding";
 import { saveOnboardingStep } from "@/lib/onboardingApi";
 import { readPreferences } from "@/lib/preferencesCache";
+import CanvasStep from "./CanvasStep";
+import GoogleStep from "./GoogleStep";
 
 interface OnboardingWizardProps {
   userId: string;
@@ -104,7 +106,9 @@ export default function OnboardingWizard({ userId, initialState, googleResult }:
 
       <h1 id="onboarding-title" className={heading}>{TITLES[step]}</h1>
 
-      <PlaceholderStep {...stepProps} />
+      {step === "canvas" && <CanvasStep key="canvas" {...stepProps} />}
+      {step === "google" && <GoogleStep key="google" {...stepProps} callbackResult={googleResult} />}
+      {(step === "sync" || step === "tour") && <PlaceholderStep key={step} {...stepProps} />}
 
       {error && (
         <div role="alert" className={`flex items-start gap-2 mt-4 p-3 rounded-lg text-sm ${
