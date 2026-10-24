@@ -136,3 +136,53 @@ test("a connected Google account continues as done", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Continue" }));
   await waitFor(() => expect(api.saveOnboardingStep).toHaveBeenCalledWith("google", "done"));
 });
+
+// ── First sync step ──────────────────────────────────────────────────────
+test("the first sync reports what was imported", async () => {
+  canvas.syncAssignments.mockResolvedValueOnce({ courses: 3, assignments: 12, created: 12, updated: 0, syncedAt: "2026-10-24T12:00:00Z" });
+  wizard(state({ canvas: "done", google: "skipped" }, "sync"));
+  fireEvent.click(await screen.findByRole("button", { name: "Run first sync" }));
+  expect(await screen.findByText("Synced 12 assignments from 3 courses")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+  await waitFor(() => expect(api.saveOnboardingStep).toHaveBeenCalledWith("sync", "done"));
+});
+
+test("a rejected token offers a way back to the Canvas step", async () => {
+  canvas.syncAssignments.mockRejectedValueOnce(new ApiError("Canvas no longer accepts the stored token. Reconnect your Canvas account.", 409));
+  wizard(state({ canvas: "done", google: "skipped" }, "sync"));
+  fireEvent.click(await screen.findByRole("button", { name: "Run first sync" }));
+  expect(await screen.findByText("Canvas no longer accepts the stored token. Reconnect your Canvas account.")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Back to Canvas" }));
+  expect(screen.getByRole("heading", { name: "Connect Canvas" })).toBeTruthy();
+  expect(api.saveOnboardingStep).not.toHaveBeenCalled();
+});
+
+test("without Canvas the step can be passed", async () => {
+  canvas.fetchCanvasStatus.mockResolvedValueOnce({ connected: false, configured: false });
+  wizard(state({ canvas: "skipped", google: "skipped" }, "sync"));
+  expect(await screen.findByText("Connect Canvas first to sync your assignments.")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+  await waitFor(() => expect(api.saveOnboardingStep).toHaveBeenCalledWith("sync", "skipped"));
+});
+
+test("moving on without syncing records the step as skipped", async () => {
+  wizard(state({ canvas: "done", google: "skipped" }, "sync"));
+  fireEvent.click(await screen.findByRole("button", { name: "Continue" }));
+  await waitFor(() => expect(api.saveOnboardingStep).toHaveBeenCalledWith("sync", "skipped"));
+  expect(canvas.syncAssignments).not.toHaveBeenCalled();
+});
+
+test("turning off Canvas due dates saves the hidden list", async () => {
+  wizard(state({ canvas: "done", google: "skipped" }, "sync"));
+  const canvasSwitch = await screen.findByRole("switch", { name: "Show Canvas due dates" });
+  expect(canvasSwitch.getAttribute("aria-checked")).toBe("true");
+  fireEvent.click(canvasSwitch);
+  await waitFor(() => expect(google.saveHiddenSources).toHaveBeenCalledWith(["canvas"]));
+  expect(screen.queryByRole("switch", { name: "Show Google events" })).toBeNull();
+});
+
+test("the Google events switch appears once Google is connected", async () => {
+  google.fetchGoogleStatus.mockResolvedValueOnce({ configured: true, connected: true });
+  wizard(state({ canvas: "done", google: "done" }, "sync"));
+  expect(await screen.findByRole("switch", { name: "Show Google events" })).toBeTruthy();
+});

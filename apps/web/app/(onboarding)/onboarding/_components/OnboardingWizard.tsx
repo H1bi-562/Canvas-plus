@@ -11,6 +11,7 @@ import { saveOnboardingStep } from "@/lib/onboardingApi";
 import { readPreferences } from "@/lib/preferencesCache";
 import CanvasStep from "./CanvasStep";
 import GoogleStep from "./GoogleStep";
+import SyncStep from "./SyncStep";
 
 interface OnboardingWizardProps {
   userId: string;
@@ -108,7 +109,8 @@ export default function OnboardingWizard({ userId, initialState, googleResult }:
 
       {step === "canvas" && <CanvasStep key="canvas" {...stepProps} />}
       {step === "google" && <GoogleStep key="google" {...stepProps} callbackResult={googleResult} />}
-      {(step === "sync" || step === "tour") && <PlaceholderStep key={step} {...stepProps} />}
+      {step === "sync" && <SyncStep key="sync" {...stepProps} onBackToCanvas={() => { setError(null); setIndex(0); }} />}
+      {step === "tour" && <PlaceholderStep key="tour" {...stepProps} />}
 
       {error && (
         <div role="alert" className={`flex items-start gap-2 mt-4 p-3 rounded-lg text-sm ${
