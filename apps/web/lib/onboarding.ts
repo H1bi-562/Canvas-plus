@@ -18,6 +18,19 @@ export function nextStep(steps: OnboardingState["steps"]): OnboardingStep | null
   return ONBOARDING_STEPS.find((step) => !(step in steps)) ?? null;
 }
 
+/**
+ * The dashboard's onboarding check. A failed lookup is logged and reported as null so the
+ * dashboard still opens (fail open): the wizard is guidance, not access control.
+ */
+export async function loadGate(load: () => Promise<OnboardingState>): Promise<OnboardingState | null> {
+  try {
+    return await load();
+  } catch (error) {
+    console.error("Onboarding check failed:", error);
+    return null;
+  }
+}
+
 /** Only loaded, unfinished progress sends a student to /onboarding; a failed lookup (null) does not. */
 export function needsOnboarding(state: OnboardingState | null): boolean {
   return state !== null && state.completedAt === null;
