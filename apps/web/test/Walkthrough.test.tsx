@@ -175,3 +175,19 @@ test("leaving the page some other way ends the tour as skipped", async () => {
   await waitFor(() => expect(onEnd).toHaveBeenCalled());
   expect(api.saveOnboardingStep).toHaveBeenCalledWith("tour", "skipped");
 });
+
+test("arrow keys inside the theme picker move between themes, not out of the tour", async () => {
+  start();
+  await title("Your dashboard");
+  for (const name of ["Customize", "Your assignments", "Study timer", "Study analytics", "Calendar", "Accounts and setup", "Pick a theme"]) {
+    await next();
+    await title(name);
+  }
+  const radio = screen.getByRole("radio", { name: "Light Modern" });
+  radio.focus();
+  fireEvent.keyDown(radio, { key: "ArrowRight" });
+  fireEvent.keyDown(radio, { key: "ArrowLeft" });
+  expect(onEnd).not.toHaveBeenCalled();
+  expect(api.saveOnboardingStep).not.toHaveBeenCalled();
+  expect(screen.getByRole("heading", { name: "Pick a theme" })).toBeTruthy();
+});

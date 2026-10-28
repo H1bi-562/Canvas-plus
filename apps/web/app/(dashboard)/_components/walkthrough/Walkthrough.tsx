@@ -125,7 +125,16 @@ export default function Walkthrough({ onEnd, markerTimeoutMs = 8000 }: Walkthrou
   // Keyboard: Esc ends, arrows move, Tab stays inside the popup.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      const group = (e.target as HTMLElement | null)?.closest?.('[role="radiogroup"]');
       if (e.key === "Escape") { e.preventDefault(); end("skipped"); }
+      else if (group && (e.key.startsWith("Arrow"))) {
+        // Inside the theme picker, arrows move between themes (radio behavior), not between stops.
+        e.preventDefault();
+        const radios = Array.from(group.querySelectorAll<HTMLElement>('[role="radio"]'));
+        const at = radios.indexOf(e.target as HTMLElement);
+        const step = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : -1;
+        radios[(at + step + radios.length) % radios.length]?.focus();
+      }
       else if (e.key === "ArrowRight" && status === "ready") go(1);
       else if (e.key === "ArrowLeft" && !isFirst) go(-1);
       else if (e.key === "Tab" && dialogRef.current) {
