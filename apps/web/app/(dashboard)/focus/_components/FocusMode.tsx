@@ -61,7 +61,7 @@ export default function FocusMode({
 
         {/* Study session timer (UC24) — tracks time on the server so it
             survives the popup closing or the service worker being evicted. */}
-        <div className="mb-6">
+        <div className="mb-6" data-tour="focus-picker">
           <div className={`rounded-lg shadow-sm p-4 mb-3 ${darkMode ? "bg-[var(--cp-card)]" : "bg-white"}`}>
             <label
               htmlFor="focus-assignment"

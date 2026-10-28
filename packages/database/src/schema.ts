@@ -31,7 +31,9 @@ export const verification = pgTable("Verification", {
 
 export const config = pgTable("Config", {
   id: id(), userID: uuid("userID").notNull().unique().references(() => user.id, { onDelete: "cascade" }),
-  canvasURL: text("canvasURL"), canvasKey: text("canvasKey"), calendarKey: text("calendarKey"), modelKey: text("modelKey"), ...timestamps()
+  canvasURL: text("canvasURL"), canvasKey: text("canvasKey"), calendarKey: text("calendarKey"), modelKey: text("modelKey"),
+  // UC23: first-run wizard progress. Steps map a step id to "done" | "skipped"; a NULL finish time means the wizard still shows.
+  onboardingSteps: jsonb("onboardingSteps").notNull().default({}), onboardingCompletedAt: time("onboardingCompletedAt"), ...timestamps()
 });
 
 export const calendarConfig = pgTable("CalendarConfig", {

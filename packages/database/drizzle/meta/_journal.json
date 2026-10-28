@@ -15,6 +15,13 @@
       "when": 1792696435224,
       "tag": "0001_dusty_silvermane",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792840958603,
+      "tag": "0002_wild_siren",
+      "breakpoints": true
     }
   ]
 }

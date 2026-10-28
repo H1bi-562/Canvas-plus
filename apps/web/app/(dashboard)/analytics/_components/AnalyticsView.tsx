@@ -84,7 +84,7 @@ export default function AnalyticsView({ darkMode, onStudyNow, onSignedOut }: Ana
         </div>
 
         {/* One filter row above everything it scopes. */}
-        <div className="flex flex-wrap items-center gap-2" role="radiogroup" aria-label="Date range">
+        <div className="flex flex-wrap items-center gap-2" role="radiogroup" aria-label="Date range" data-tour="analytics-range">
           {RANGES.map(({ key, label }) => {
             const selected = key === range;
             return (

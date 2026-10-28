@@ -86,9 +86,10 @@ export default function Dashboard({
               </button>
             </div>
           ))
-          : assignments.map((assignment) => (
+          : assignments.map((assignment, i) => (
             <div
               key={assignment.id}
+              data-tour={i === 0 ? "assignment-card" : undefined}
               className={`rounded-lg shadow-sm p-3 w-80 mx-auto ${darkMode ? "bg-[var(--cp-card)]" : "bg-white"}`}
             >
               <div className="flex items-center gap-2 mb-1">
