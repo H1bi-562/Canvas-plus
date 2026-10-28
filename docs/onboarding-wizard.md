@@ -3,11 +3,11 @@
 *Nathan Salazar · CECS 491B · CanvasPlus*
 
 ## What it does
-- Every student sees a four-step setup wizard once, the first time they open CanvasPlus after it ships. That includes students who already have accounts.
+- Every student sees a three-step setup wizard once, the first time they open CanvasPlus after it ships. That includes students who already have accounts.
 - **Step 1, Canvas:** paste a Canvas personal access token, or skip and connect later.
 - **Step 2, Google Calendar:** what connecting does, with an optional Connect, or skip.
-- **Step 3, First sync:** import courses and assignments now, and choose which sources the calendar shows.
-- **Step 4, Feature tour:** six cards on the core features (dashboard widgets, assignments, the study timer, analytics, calendar, settings and the extension), then pick a color theme and Finish.
+- **Step 3, First sync:** import courses and assignments now, choose which sources the calendar shows, then **Finish**.
+- **In-app walkthrough:** Finish opens the dashboard, where a guided tour moves through the real pages (Home, Focus, Analytics, Calendar, Settings). It dims the screen, outlines each actual feature, explains it in a small popup with Back, Next and Skip tour, and ends with a theme picker.
 - **Settings → Run setup again** reopens the wizard. Connected accounts stay connected.
 
 ## How it fits together
@@ -25,6 +25,9 @@
 - **Canvas and Google are skippable.** Only the six CSULB participants approved by the university have Canvas tokens, and Google may not be set up on every server. Teammates and graders can still finish the wizard.
 - **Saves can't overwrite each other.** Each step is merged into the stored progress inside the database (Postgres `jsonb ||`), so two tabs saving at the same moment both keep their step.
 - **Fail open.** If the progress lookup fails, the dashboard still opens and the error is logged. The wizard is guidance, not access control.
+- **A real walkthrough, not cards.** Showing the actual button beats describing it. Each stop finds its feature through a `data-tour` marker, waits for slow pages (up to 8 s), and skips a stop that cannot apply (no assignments yet, or Customize hidden on narrow screens).
+- **Built in-house, loaded only when needed.** The spotlight is about 200 lines of our own code instead of a tour library: no new dependency (less supply-chain risk), it matches all five themes, and it is keyboard and screen-reader friendly. Returning users never download it.
+- **No new migration.** The walkthrough records the existing `tour` step when it ends (Done, Skip, Esc or leaving the page).
 - **The tour only shows features that work today.** Smart Scheduler, Focus Mode site blocking and Break into Tasks are left out until they ship, so the tour never promises something that doesn't work.
 - **The theme pick follows the dashboard's sync rules.** The wizard writes the same local cache the dashboard uses, so the chosen theme isn't replaced by a stale copy on the first dashboard load.
 
