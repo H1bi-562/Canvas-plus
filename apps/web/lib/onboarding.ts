@@ -4,6 +4,9 @@
 
 export const ONBOARDING_STEPS = ["canvas", "google", "sync", "tour"] as const;
 export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
+/** The wizard's own steps. "tour" is recorded by the in-app walkthrough on the dashboard instead. */
+export const WIZARD_STEPS = ["canvas", "google", "sync"] as const;
+export type WizardStep = (typeof WIZARD_STEPS)[number];
 export type StepStatus = "done" | "skipped";
 
 export interface OnboardingState {
@@ -34,4 +37,9 @@ export async function loadGate(load: () => Promise<OnboardingState>): Promise<On
 /** Only loaded, unfinished progress sends a student to /onboarding; a failed lookup (null) does not. */
 export function needsOnboarding(state: OnboardingState | null): boolean {
   return state !== null && state.completedAt === null;
+}
+
+/** Wizard finished, but the in-app walkthrough has not been seen (done or skipped) yet. */
+export function needsWalkthrough(state: OnboardingState | null): boolean {
+  return state !== null && state.completedAt !== null && !("tour" in state.steps);
 }

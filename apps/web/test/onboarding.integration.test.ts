@@ -42,10 +42,10 @@ test("parallel saves keep both steps", async () => {
   expect((await getOnboarding(user.id)).steps).toEqual({ canvas: "done", google: "skipped" });
 });
 
-test("complete records the tour and a finish time; reset clears both", async () => {
+test("complete sets a finish time but leaves the walkthrough to record the tour; reset clears both", async () => {
   const { user } = await register();
   const done = await completeOnboarding(user.id);
-  expect(done.steps.tour).toBe("done");
+  expect(done.steps.tour).toBeUndefined();
   expect(Number.isNaN(Date.parse(done.completedAt!))).toBe(false);
   expect(await resetOnboarding(user.id)).toEqual({ steps: {}, completedAt: null, nextStep: "canvas" });
 });

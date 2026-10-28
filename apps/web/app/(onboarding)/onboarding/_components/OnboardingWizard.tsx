@@ -7,14 +7,12 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import { DEFAULT_THEME, getTheme, type ThemeId } from "@canvasplus/ui/themes";
-import { ONBOARDING_STEPS, type OnboardingState, type OnboardingStep, type StepStatus } from "@/lib/onboarding";
+import { WIZARD_STEPS, type OnboardingState, type StepStatus, type WizardStep } from "@/lib/onboarding";
 import { completeOnboarding, saveOnboardingStep } from "@/lib/onboardingApi";
 import { readPreferences } from "@/lib/preferencesCache";
 import CanvasStep from "./CanvasStep";
 import GoogleStep from "./GoogleStep";
 import SyncStep from "./SyncStep";
-import TourStep from "./TourStep";
-import { applyThemeChoice } from "../_lib/theme";
 
 interface OnboardingWizardProps {
   userId: string;
@@ -32,18 +30,21 @@ export interface StepProps {
   saving: boolean;
 }
 
-const TITLES: Record<OnboardingStep, string> = {
+const TITLES: Record<WizardStep, string> = {
   canvas: "Connect Canvas",
   google: "Google Calendar",
-  sync: "Run your first sync",
-  tour: "Tour CanvasPlus"
+  sync: "Run your first sync"
 };
 
 const SAVE_ERROR = "Could not save your progress. Try again.";
 
+const LAST = WIZARD_STEPS.length - 1;
+
 function startIndex(initialState: OnboardingState, googleResult: OnboardingWizardProps["googleResult"]) {
-  if (googleResult) return ONBOARDING_STEPS.indexOf("google");
-  return ONBOARDING_STEPS.indexOf(initialState.nextStep ?? "tour");
+  if (googleResult) return WIZARD_STEPS.indexOf("google");
+  const next = initialState.nextStep;
+  // "tour" (or nothing left) means sync was saved but finishing failed: reopen sync so Finish can be retried.
+  return next === "canvas" || next === "google" ? WIZARD_STEPS.indexOf(next) : LAST;
 }
 
 export default function OnboardingWizard({ userId, initialState, googleResult }: OnboardingWizardProps) {
@@ -66,7 +67,7 @@ export default function OnboardingWizard({ userId, initialState, googleResult }:
     document.documentElement.dataset.theme = themeId;
   }, [themeId]);
 
-  const step = ONBOARDING_STEPS[index];
+  const step = WIZARD_STEPS[index];
   const darkMode = getTheme(themeId).mode === "dark";
 
   // When the step changes, move focus to its heading so keyboard and screen-reader users keep their place.
@@ -75,40 +76,35 @@ export default function OnboardingWizard({ userId, initialState, googleResult }:
     headingRef.current?.focus();
   }, [index]);
 
+  /**
+   * Save this step, then move on. On the last step (sync) this is Finish: it also sets the finish
+   * time and opens the dashboard, where the in-app walkthrough takes over.
+   */
   const record = async (status: StepStatus) => {
     if (savingRef.current) return;
     savingRef.current = true;
     setSaving(true);
     setError(null);
+    const finishing = step === WIZARD_STEPS[LAST];
     try {
       await saveOnboardingStep(step, status);
+      if (finishing) await completeOnboarding();
     } catch {
       setError(SAVE_ERROR);
-      return;
-    } finally {
       savingRef.current = false;
       setSaving(false);
+      return;
     }
+    if (finishing) {
+      // Keep saving=true so nothing can be clicked while the dashboard loads.
+      router.replace("/assignments");
+      router.refresh();
+      return;
+    }
+    savingRef.current = false;
+    setSaving(false);
     // Advance from the step that was saved, never from wherever a second click left the index.
-    setIndex(Math.min(ONBOARDING_STEPS.indexOf(step) + 1, ONBOARDING_STEPS.length - 1));
-  };
-
-  /** Finish: record the tour and the finish time, then open the dashboard (outside the try, like redirect). */
-  const finish = async () => {
-    if (savingRef.current) return;
-    savingRef.current = true;
-    setSaving(true);
-    setError(null);
-    try {
-      await completeOnboarding();
-    } catch {
-      setError(SAVE_ERROR);
-      savingRef.current = false;
-      setSaving(false);
-      return;
-    }
-    router.replace("/assignments");
-    router.refresh();
+    setIndex(Math.min(WIZARD_STEPS.indexOf(step) + 1, LAST));
   };
 
   const goBack = () => {
@@ -129,7 +125,7 @@ export default function OnboardingWizard({ userId, initialState, googleResult }:
       <p className={muted}>Welcome to CanvasPlus</p>
       <div className="flex items-center justify-between mt-3">
         <p className={`text-xs font-medium uppercase tracking-wide ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
-          Step {index + 1} of {ONBOARDING_STEPS.length}
+          Step {index + 1} of {WIZARD_STEPS.length}
         </p>
         {index > 0 && (
           <button type="button" onClick={goBack} disabled={saving} className={`inline-flex items-center gap-1 text-sm ${darkMode ? "text-gray-300 hover:text-white" : "text-gray-600 hover:text-gray-900"}`}>
@@ -138,7 +134,7 @@ export default function OnboardingWizard({ userId, initialState, googleResult }:
         )}
       </div>
       <div className="flex gap-1.5 mt-2" aria-hidden="true">
-        {ONBOARDING_STEPS.map((id, i) => (
+        {WIZARD_STEPS.map((id, i) => (
           <span key={id} className={`h-1.5 flex-1 rounded-full ${i <= index ? "bg-blue-600" : darkMode ? "bg-gray-600" : "bg-gray-200"}`} />
         ))}
       </div>
@@ -148,10 +144,6 @@ export default function OnboardingWizard({ userId, initialState, googleResult }:
       {step === "canvas" && <CanvasStep key="canvas" {...stepProps} />}
       {step === "google" && <GoogleStep key="google" {...stepProps} callbackResult={googleResult} />}
       {step === "sync" && <SyncStep key="sync" {...stepProps} onBackToCanvas={() => { setError(null); setIndex(0); }} />}
-      {step === "tour" && (
-        <TourStep key="tour" darkMode={darkMode} themeId={themeId} onFinish={finish}
-          onThemeChange={(id) => { setThemeId(id); void applyThemeChoice(userId, id); }} />
-      )}
 
       {error && (
         <div role="alert" className={`flex items-start gap-2 mt-4 p-3 rounded-lg text-sm ${

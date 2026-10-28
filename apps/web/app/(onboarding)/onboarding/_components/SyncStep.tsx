@@ -104,7 +104,7 @@ export default function SyncStep({ darkMode, onDone, saving, onBackToCanvas }: S
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <button type="button" onClick={() => void onDone(result ? "done" : "skipped")} disabled={syncing || saving} className={s.primary}>Continue</button>
+        <button type="button" onClick={() => void onDone(result ? "done" : "skipped")} disabled={syncing || saving} className={s.primary}>Finish</button>
         {error && canvasConnected && <button type="button" onClick={onBackToCanvas} className={s.secondary}>Back to Canvas</button>}
       </div>
 

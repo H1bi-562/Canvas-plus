@@ -44,11 +44,10 @@ export async function saveStep(userId, step, status) {
   return upsert(userId, { onboardingSteps: { [step]: status } }, { onboardingSteps: merge({ [step]: status }) });
 }
 
+/** Finishing the wizard sets the time only; the in-app walkthrough records "tour" when it ends. */
 export async function completeOnboarding(userId) {
   const now = new Date();
-  return upsert(userId,
-    { onboardingSteps: { tour: "done" }, onboardingCompletedAt: now },
-    { onboardingSteps: merge({ tour: "done" }), onboardingCompletedAt: now });
+  return upsert(userId, { onboardingCompletedAt: now }, { onboardingCompletedAt: now });
 }
 
 export async function resetOnboarding(userId) {

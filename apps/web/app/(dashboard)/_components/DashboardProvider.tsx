@@ -9,6 +9,10 @@ import { fetchLayout, saveTheme, type LayoutItem, type LayoutResponse } from "@/
 import { clearPreferences, readPreferences, subscribePreferences, writePreferences } from "@/lib/preferencesCache";
 import { DEFAULT_THEME, getTheme, type ThemeId } from "@canvasplus/ui/themes";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
+
+// UC23: only downloaded while a first-time walkthrough is running.
+const Walkthrough = dynamic(() => import("./walkthrough/Walkthrough"), { ssr: false });
 
 type ViewType = "assignments" | "calendar" | "focus" | "analytics" | "profile" | "auth";
 
@@ -225,8 +229,10 @@ export function useDashboard() {
   return context;
 }
 
-export default function DashboardProvider({ initialName, userId, children }: { initialName: string; userId: string; children: ReactNode }) {
+export default function DashboardProvider({ initialName, userId, walkthroughPending = false, children }: { initialName: string; userId: string; walkthroughPending?: boolean; children: ReactNode }) {
   const state = useDashboardState(initialName, userId);
+  // The server prop stays stale until the next refresh, so ending the tour is tracked here too.
+  const [showWalkthrough, setShowWalkthrough] = useState(walkthroughPending);
   const { darkMode, signedInUser, handleLogout, logoutError, loggingOut, selectedAssignmentData, setSelectedAssignment, getPriorityColor, loadAssignments, assignments } = state;
   return <DashboardContext.Provider value={state}>
     <div className={`size-full flex flex-col ${darkMode ? "bg-[var(--cp-page)]" : "bg-gray-50"}`}>
@@ -253,6 +259,7 @@ export default function DashboardProvider({ initialName, userId, children }: { i
       {logoutError && <p role="alert" className="px-6 py-2 text-red-600">{logoutError}</p>}
       {children}
       <BottomNav darkMode={darkMode} />
+      {showWalkthrough && <Walkthrough onEnd={() => setShowWalkthrough(false)} />}
       {/* Assignment Detail Panel */}
       <AssignmentDetails
         assignment={selectedAssignmentData}

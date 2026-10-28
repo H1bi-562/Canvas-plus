@@ -164,7 +164,7 @@ export default function CalendarView({
             </button>
 
             {/* Month / week switch */}
-            <div role="group" aria-label="Calendar view" className={`ml-2 inline-flex rounded-lg border p-0.5 ${darkMode ? "border-gray-600" : "border-gray-300"}`}>
+            <div role="group" aria-label="Calendar view" data-tour="calendar-view" className={`ml-2 inline-flex rounded-lg border p-0.5 ${darkMode ? "border-gray-600" : "border-gray-300"}`}>
               {(["month", "week"] as const).map(option => (
                 <button
                   type="button"
