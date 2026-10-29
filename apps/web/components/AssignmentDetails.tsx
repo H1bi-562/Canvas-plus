@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { Calendar, CheckCircle2, Loader2, Sparkles, X } from "lucide-react";
+import { Calendar, CheckCircle2, ListChecks, Loader2, Sparkles, X } from "lucide-react";
 
 import {
   Assignment,
   FINISHED_STATUSES,
   formatMinutes,
   saveCompleted,
-  generateSummary
+  generateSummary,
+  generateSubtasks
 } from "@/lib/assignmentsApi";
 import { ApiError } from "@/lib/apiClient";
 import CompletionBadge from "@/components/CompletionBadge";
@@ -38,6 +39,23 @@ export default function AssignmentDetails({
   const [summary, setSummary] = useState<string | null>(assignment?.summary ?? null);
   const [summarizing, setSummarizing] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [subtasks, setSubtasks] = useState<string[]>(assignment?.subtasks ?? []);
+  const [decomposing, setDecomposing] = useState(false);
+  const [subtaskError, setSubtaskError] = useState<string | null>(null);
+
+  async function handleDecompose() {
+    if (decomposing || !assignment) return;
+    setDecomposing(true);
+    setSubtaskError(null);
+    try {
+      const res = await generateSubtasks(assignment.id);
+      setSubtasks(res.subtasks);
+    } catch (err) {
+      setSubtaskError(err instanceof ApiError ? err.message : "Could not break this into tasks.");
+    } finally {
+      setDecomposing(false);
+    }
+  }
 
   async function handleSummarize() {
     if (summarizing || !assignment) return;
@@ -223,9 +241,28 @@ export default function AssignmentDetails({
               {summaryError && <p role="alert" className="mt-2 text-sm text-red-600">{summaryError}</p>}
             </div>
 
-            <button className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2">
-              <span>Break into Tasks</span>
-            </button>
+            <div>
+              <button
+                type="button"
+                onClick={handleDecompose}
+                disabled={decomposing}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {decomposing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ListChecks className="w-4 h-4" />}
+                <span>{subtasks.length ? "Regenerate Tasks" : "Break into Tasks"}</span>
+              </button>
+              {subtasks.length > 0 && (
+                <ul className={`mt-2 space-y-1 text-sm ${darkMode ? "text-gray-300" : "text-gray-700"}`}>
+                  {subtasks.map((task, i) => (
+                    <li key={i} className="flex gap-2">
+                      <span className={darkMode ? "text-gray-500" : "text-gray-400"}>{i + 1}.</span>
+                      <span>{task}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {subtaskError && <p role="alert" className="mt-2 text-sm text-red-600">{subtaskError}</p>}
+            </div>
           </div>
         </div>
       </div>
