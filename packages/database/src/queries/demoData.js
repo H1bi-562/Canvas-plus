@@ -13,10 +13,15 @@ import { pool } from "../client";
 
 const DEMO_BASE_URL = "demo://canvas-plus";
 
+// UC14 grading categories: 491B and 427 weight theirs, 443 grades by total
+// points, so the grade impact panel can be previewed both ways.
 const DEMO_COURSES = [
-  { id: "cecs-491b", name: "Computer Science Senior Project II", code: "CECS 491B-02", department: "CECS" },
-  { id: "cecs-427",  name: "Network Science",                    code: "CECS 427-01",  department: "CECS" },
-  { id: "cecs-443",  name: "Software Project Management",        code: "CECS 443-01",  department: "CECS" }
+  { id: "cecs-491b", name: "Computer Science Senior Project II", code: "CECS 491B-02", department: "CECS", weighted: true,
+    groups: { reviews: ["Weekly Reviews", 20], deliverables: ["Deliverables", 50], demos: ["Demos", 30] } },
+  { id: "cecs-427",  name: "Network Science",                    code: "CECS 427-01",  department: "CECS", weighted: true,
+    groups: { quizzes: ["Quizzes", 15], problems: ["Problem Sets", 35], programming: ["Programming", 50] } },
+  { id: "cecs-443",  name: "Software Project Management",        code: "CECS 443-01",  department: "CECS", weighted: false,
+    groups: { assignments: ["Assignments", 0] } }
 ];
 
 // dueInDays is relative to today, so the dashboard always has a mix of overdue,
@@ -27,37 +32,37 @@ const DEMO_COURSES = [
 // "Mark done" would record: submitted / late / missing (Canvas) or doneDaysAgo
 // (manual). Together they give UC21's charts one of every completion state.
 const DEMO_ASSIGNMENTS = [
-  { id: "demo-491b-weekly-review-1", course: "cecs-491b", title: "Weekly Review — Sprint 3",     points: 10,  dueInDays: -4,
+  { id: "demo-491b-weekly-review-1", course: "cecs-491b", group: "reviews", score: 9, title: "Weekly Review — Sprint 3",     points: 10,  dueInDays: -4,
     estimateMin: 45,  completion: { submittedDaysAgo: 4, late: false },
     description: "Summarize what you shipped this sprint, blockers, and next sprint goals." },
-  { id: "demo-491b-weekly-review-2", course: "cecs-491b", title: "Weekly Review — Sprint 4",     points: 10,  dueInDays: 3,
+  { id: "demo-491b-weekly-review-2", course: "cecs-491b", group: "reviews", title: "Weekly Review — Sprint 4",     points: 10,  dueInDays: 3,
     estimateMin: 45,
     description: "Summarize what you shipped this sprint, blockers, and next sprint goals." },
-  { id: "demo-491b-design-spec",     course: "cecs-491b", title: "Design Spec Update (UC21–24)", points: 25,  dueInDays: 10,
+  { id: "demo-491b-design-spec",     course: "cecs-491b", group: "deliverables", title: "Design Spec Update (UC21–24)", points: 25,  dueInDays: 10,
     estimateMin: 120,
     description: "Add sequence and activity diagrams for the new use cases to the living design document." },
-  { id: "demo-491b-sprint-demo",     course: "cecs-491b", title: "Sprint Demo",                  points: 50,  dueInDays: 17,
+  { id: "demo-491b-sprint-demo",     course: "cecs-491b", group: "demos", title: "Sprint Demo",                  points: 50,  dueInDays: 17,
     estimateMin: 180,
     description: "Live demo of the Canvas sync and study analytics features to the class." },
-  { id: "demo-427-reading-quiz",     course: "cecs-427",  title: "Reading Quiz — Chapter 3",     points: 10,  dueInDays: 1,
+  { id: "demo-427-reading-quiz",     course: "cecs-427",  group: "quizzes", title: "Reading Quiz — Chapter 3",     points: 10,  dueInDays: 1,
     estimateMin: null,
     description: "Short quiz on strong and weak ties, triadic closure, and the clustering coefficient." },
-  { id: "demo-427-problem-set-2",    course: "cecs-427",  title: "Problem Set 2",                points: 50,  dueInDays: -2,
+  { id: "demo-427-problem-set-2",    course: "cecs-427",  group: "problems", score: 42, title: "Problem Set 2",                points: 50,  dueInDays: -2,
     estimateMin: 150, completion: { submittedDaysAgo: 1, late: true },
     description: "Graph theory proofs and BFS traces. Show all work." },
-  { id: "demo-427-programming-2",    course: "cecs-427",  title: "Programming Assignment 2",     points: 100, dueInDays: 5,
+  { id: "demo-427-programming-2",    course: "cecs-427",  group: "programming", title: "Programming Assignment 2",     points: 100, dueInDays: 5,
     estimateMin: 240,
     description: "Implement Erdős–Rényi random graphs from the definition and plot the giant component emergence." },
-  { id: "demo-443-meeting-minutes",  course: "cecs-443",  title: "Team Meeting Minutes",         points: 5,   dueInDays: 2,
+  { id: "demo-443-meeting-minutes",  course: "cecs-443",  group: "assignments", title: "Team Meeting Minutes",         points: 5,   dueInDays: 2,
     estimateMin: 15,  completion: { doneDaysAgo: 1 },
     description: "Submit minutes from this week’s team meeting using the course template." },
-  { id: "demo-443-reading-reflection", course: "cecs-443", title: "Reading Reflection 2",        points: 10,  dueInDays: -6,
+  { id: "demo-443-reading-reflection", course: "cecs-443", group: "assignments", title: "Reading Reflection 2",        points: 10,  dueInDays: -6,
     estimateMin: 30,  completion: { missing: true },
     description: "One-page reflection on the assigned case study." },
-  { id: "demo-443-study-guide",      course: "cecs-443",  title: "Chapter 3 Study Guide",        points: 20,  dueInDays: 8,
+  { id: "demo-443-study-guide",      course: "cecs-443",  group: "assignments", title: "Chapter 3 Study Guide",        points: 20,  dueInDays: 8,
     estimateMin: 90,
     description: "Answer the review questions on project scheduling and estimation." },
-  { id: "demo-443-proposal",         course: "cecs-443",  title: "Project Proposal",             points: 100, dueInDays: 14,
+  { id: "demo-443-proposal",         course: "cecs-443",  group: "assignments", title: "Project Proposal",             points: 100, dueInDays: 14,
     estimateMin: 300,
     description: "Scope, schedule, risks, and budget for the team project." }
 ];
@@ -121,16 +126,29 @@ async function seedDemoData(userID) {
     await client.query("BEGIN");
 
     const courseIDs = {};
+    const groupIDs = {};
     for (const course of DEMO_COURSES) {
       const { rows: [row] } = await client.query(
-        `INSERT INTO "Course" (name, "courseCode", department, semester, "canvasBaseURL", "canvasCourseID")
-         VALUES ($1, $2, $3, 'Fall 2026', $4, $5)
+        `INSERT INTO "Course" (name, "courseCode", department, semester, "canvasBaseURL", "canvasCourseID", "applyGroupWeights")
+         VALUES ($1, $2, $3, 'Fall 2026', $4, $5, $6)
          ON CONFLICT ("canvasBaseURL", "canvasCourseID") DO UPDATE SET
-           name = EXCLUDED.name, "courseCode" = EXCLUDED."courseCode", "updated_at" = NOW()
+           name = EXCLUDED.name, "courseCode" = EXCLUDED."courseCode",
+           "applyGroupWeights" = EXCLUDED."applyGroupWeights", "updated_at" = NOW()
          RETURNING id`,
-        [course.name, course.code, course.department, DEMO_BASE_URL, course.id]
+        [course.name, course.code, course.department, DEMO_BASE_URL, course.id, course.weighted]
       );
       courseIDs[course.id] = row.id;
+
+      for (const [key, [name, weight]] of Object.entries(course.groups)) {
+        const { rows: [group] } = await client.query(
+          `INSERT INTO "AssignmentGroup" ("courseID", "canvasGroupID", name, weight)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT ("courseID", "canvasGroupID") DO UPDATE SET name = EXCLUDED.name, weight = EXCLUDED.weight
+           RETURNING id`,
+          [row.id, key, name, weight]
+        );
+        groupIDs[`${course.id}/${key}`] = group.id;
+      }
     }
 
     // Due dates, estimates, and completion are reset on every seed so "due in
@@ -142,16 +160,18 @@ async function seedDemoData(userID) {
       const { rows: [row] } = await client.query(
         `INSERT INTO "Assignment"
            ("userID", "courseID", title, description, points, "dueAt", "canvasAssignmentID", "syncedAt",
-            "submittedAt", "submissionState", late, missing, "completedAt")
-         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), $8, $9, $10, $11, $12)
+            "submittedAt", "submissionState", late, missing, "completedAt", score, "groupID")
+         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), $8, $9, $10, $11, $12, $13, $14)
          ON CONFLICT ("userID", "canvasAssignmentID") DO UPDATE SET
            title = EXCLUDED.title, description = EXCLUDED.description,
            points = EXCLUDED.points, "dueAt" = EXCLUDED."dueAt", "syncedAt" = NOW(),
            "submittedAt" = EXCLUDED."submittedAt", "submissionState" = EXCLUDED."submissionState",
-           late = EXCLUDED.late, missing = EXCLUDED.missing, "completedAt" = EXCLUDED."completedAt"
+           late = EXCLUDED.late, missing = EXCLUDED.missing, "completedAt" = EXCLUDED."completedAt",
+           score = EXCLUDED.score, "groupID" = EXCLUDED."groupID"
          RETURNING id, (xmax = 0) AS inserted`,
         [userID, courseIDs[a.course], a.title, a.description, a.points, dueDate(a.dueInDays), a.id,
-          c.submittedAt, c.submissionState, c.late, c.missing, c.completedAt]
+          c.submittedAt, c.submissionState, c.late, c.missing, c.completedAt,
+          a.score ?? null, groupIDs[`${a.course}/${a.group}`]]
       );
       assignmentIDs[a.id] = row.id;
       if (row.inserted) created += 1;

@@ -29,7 +29,7 @@ export interface VizTheme {
 
 const STATUS = { good: "#0ca30c", warning: "#fab219", critical: "#d03b3b" };
 
-// surface follows the colour theme (src/styles/themes.css): it is only used to
+// surface follows the colour theme (@canvasplus/ui/styles.css): it is only used to
 // knock marks out from the card behind them.
 export const LIGHT: VizTheme = {
   surface: "var(--cp-card)",

@@ -1,5 +1,7 @@
 import { Eye, EyeOff } from "lucide-react";
 import CanvasConnection from "@/app/(dashboard)/settings/_components/CanvasConnection";
+import GoogleConnection from "@/app/(dashboard)/settings/_components/GoogleConnection";
+import SetupCard from "@/app/(dashboard)/settings/_components/SetupCard";
 
 interface SettingsProps {
   darkMode: boolean;
@@ -82,16 +84,16 @@ export default function Settings({
       <div className={`px-6 py-6 min-h-full ${darkMode ? "bg-[var(--cp-page)]" : "bg-gray-50"}`}>
         <div className="max-w-3xl mx-auto space-y-6">
 
-          {/* Canvas Integration — token connect, sync, and dev-only demo data */}
-          <CanvasConnection darkMode={darkMode} onAssignmentsChanged={onAssignmentsChanged} />
+          {/* Walkthrough marker: the account and setup cards */}
+          <div className="space-y-6" data-tour="settings-accounts">
+            {/* Canvas Integration — token connect, sync, and dev-only demo data */}
+            <CanvasConnection darkMode={darkMode} onAssignmentsChanged={onAssignmentsChanged} />
 
-          {/* Google Integration */}
-          <div className={`rounded-lg shadow-sm p-6 ${darkMode ? "bg-[var(--cp-card)]" : "bg-white"}`}>
-            <h2 className={`font-semibold mb-2 ${darkMode ? "text-white" : "text-gray-900"}`}>Google Integration</h2>
-            <p className={`text-sm mb-4 ${darkMode ? "text-gray-300" : "text-gray-600"}`}>Connect your Google account to sync calendars and assignments</p>
-            <button className="bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-6 rounded-lg transition-colors">
-              Connect Google Account
-            </button>
+            {/* Google Calendar — read-only import shown on the Calendar page */}
+            <GoogleConnection darkMode={darkMode} />
+
+            {/* Setup — re-run the first-run wizard (UC23) */}
+            <SetupCard darkMode={darkMode} />
           </div>
 
           {/* AI Integration */}

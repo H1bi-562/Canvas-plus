@@ -27,6 +27,7 @@ const MAX_ROWS = 40;
 
 // Minimum sizes keep a widget readable; the client uses the same numbers.
 const WIDGETS = {
+  "priority-list":        { minW: 3, minH: 4 },
   "upcoming-assignments": { minW: 3, minH: 4 },
   "study-timer":          { minW: 3, minH: 5 },
   "stat-tiles":           { minW: 4, minH: 3 },
@@ -38,18 +39,19 @@ const WIDGETS = {
 };
 const WIDGET_IDS = Object.keys(WIDGETS);
 
-// What a student sees before they customize anything: today's work on the
-// left, the timer and a glance at their numbers on the right.
+// What a student sees before they customize anything: what to do next (UC15)
+// and today's work on the left, the timer and a glance at their numbers on the right.
 const DEFAULT_LAYOUT = [
   { i: "stat-tiles",           x: 0, y: 0,  w: 12, h: 3 },
-  { i: "upcoming-assignments", x: 0, y: 3,  w: 7,  h: 10 },
+  { i: "priority-list",        x: 0, y: 3,  w: 7,  h: 8 },
   { i: "study-timer",          x: 7, y: 3,  w: 5,  h: 6 },
   { i: "at-risk",              x: 7, y: 9,  w: 5,  h: 4 },
-  { i: "time-per-course",      x: 0, y: 13, w: 6,  h: 7 },
-  { i: "on-time-rate",         x: 6, y: 13, w: 6,  h: 7 }
+  { i: "upcoming-assignments", x: 0, y: 11, w: 7,  h: 10 },
+  { i: "on-time-rate",         x: 7, y: 13, w: 5,  h: 7 },
+  { i: "time-per-course",      x: 0, y: 21, w: 12, h: 7 }
 ];
 
-// Must match src/lib/themes.ts.
+// Must match packages/ui/src/themes.ts.
 const THEMES = ["light-modern", "dark-modern", "monokai", "solarized-light", "dracula"];
 const DEFAULT_THEME = "light-modern";
 

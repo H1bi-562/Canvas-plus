@@ -23,7 +23,7 @@ const DEFAULT_PAGE_CAP = 2;
 function defaultCourses() {
   return [
     { id: 101, name: "Computer Science Senior Project II", course_code: "CECS 491B-02",
-      workflow_state: "available", term: { name: "Fall 2026" } },
+      workflow_state: "available", term: { name: "Fall 2026" }, apply_assignment_group_weights: true },
     { id: 102, name: "Network Science", course_code: "CECS 427-01",
       workflow_state: "available", term: { name: "Fall 2026" } },
     { id: 103, name: "Old Course", course_code: "CECS 100-01",
@@ -36,13 +36,13 @@ function defaultAssignments() {
   return {
     101: [
       { id: 5001, name: "Weekly Review 9/19", description: "<p>Sprint notes</p>",
-        points_possible: 10, due_at: "2026-09-20T06:59:00Z", lock_at: null,
+        points_possible: 10, due_at: "2026-09-20T06:59:00Z", lock_at: null, assignment_group_id: 901,
         submission: { workflow_state: "unsubmitted", submitted_at: null, late: false, missing: false, excused: false } },
       { id: 5002, name: "Design Spec Update", description: null,
-        points_possible: 2.5, due_at: "2026-09-27T06:59:00Z", lock_at: "2026-09-28T06:59:00Z",
-        submission: { workflow_state: "submitted", submitted_at: "2026-09-26T20:00:00Z", late: false, missing: false, excused: false } },
+        points_possible: 2.5, due_at: "2026-09-27T06:59:00Z", lock_at: "2026-09-28T06:59:00Z", assignment_group_id: 902,
+        submission: { workflow_state: "submitted", submitted_at: "2026-09-26T20:00:00Z", score: 2, late: false, missing: false, excused: false } },
       { id: 5003, name: "Team Retro", description: "", points_possible: null,
-        due_at: null, lock_at: null,
+        due_at: null, lock_at: null, assignment_group_id: 901, omit_from_final_grade: true,
         submission: { workflow_state: "graded", submitted_at: null, late: false, missing: false, excused: true } }
     ],
     102: [
@@ -54,6 +54,14 @@ function defaultAssignments() {
       { id: 7001, name: "Should never sync", description: "", points_possible: 1,
         due_at: "2024-05-01T06:59:00Z", lock_at: null }
     ]
+  };
+}
+
+/** Grading categories (UC14); 102 has none, as a course without groups set up would. */
+function defaultGroups() {
+  return {
+    101: [{ id: 901, name: "Weekly Reviews", group_weight: 30 }, { id: 902, name: "Deliverables", group_weight: 70 }],
+    102: []
   };
 }
 
@@ -71,6 +79,7 @@ function createMockCanvas({ expiresIn = 3600, pageCap = DEFAULT_PAGE_CAP } = {})
   const personalTokens = new Set([VALID_PAT]);
   const courses        = defaultCourses();
   const assignments    = defaultAssignments();
+  const groups         = defaultGroups();
 
   const state = {
     get issuedAccessTokens() { return [...accessTokens]; },
@@ -228,6 +237,13 @@ function createMockCanvas({ expiresIn = 3600, pageCap = DEFAULT_PAGE_CAP } = {})
       course_id: Number(req.params.courseID),
       html_url: `${base}/courses/${req.params.courseID}/assignments/${a.id}`
     })));
+  });
+
+  // ── A course's assignment groups (grading categories). ──
+  app.get("/api/v1/courses/:courseID/assignment_groups", (req, res) => {
+    const list = groups[req.params.courseID];
+    if (!list) return res.status(404).json({ errors: [{ message: "The specified resource does not exist." }] });
+    paginate(req, res, list);
   });
 
   /** Listen on an ephemeral port; returns the base URL. */

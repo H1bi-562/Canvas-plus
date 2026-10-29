@@ -64,6 +64,18 @@ test("concurrent starts and pause/resume preserve exactly one timer and exclude 
   expect((await (await active(req("GET", cookie))).json()).session).toBeNull();
 });
 
+test("Google Calendar routes validate ranges and report an unlinked account", async () => {
+  const { GET: googleStatus, DELETE: googleDisconnect } = await import("../app/api/google/route");
+  const { GET: googleEvents } = await import("../app/api/google/events/route");
+  const { cookie } = await register();
+  const eventsReq = (query: string) => new Request(`http://localhost:3000/api/google/events?${query}`, { headers: { Cookie: cookie } });
+  expect((await (await googleStatus(req("GET", cookie))).json()).connected).toBe(false);
+  expect((await googleEvents(eventsReq("start=2026-10-01T00:00:00Z&end=2026-11-01T00:00:00Z"))).status).toBe(404);
+  expect((await googleEvents(eventsReq("start=bad&end=2026-11-01T00:00:00Z"))).status).toBe(400);
+  expect((await googleEvents(eventsReq("start=2026-01-01T00:00:00Z&end=2026-12-01T00:00:00Z"))).status).toBe(400);
+  expect((await googleDisconnect(req("DELETE", cookie))).status).toBe(404);
+});
+
 test("Canvas configuration errors remain actionable", async () => {
   const { GET: authorize } = await import("../app/api/canvas/authorize/route");
   const { cookie } = await register();
