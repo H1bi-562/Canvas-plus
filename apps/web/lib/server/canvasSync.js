@@ -9,7 +9,7 @@
 // edited, or messaged.
 
 import axios from "axios";
-import { storeAssignments } from "@canvasplus/database/queries/canvasSync";
+import { storeAssignments, lastSyncedAt } from "@canvasplus/database/queries/canvasSync";
 import * as canvasAuth from "./canvasAuth.js";
 
 const { CanvasAuthError } = canvasAuth;
@@ -135,15 +135,38 @@ async function syncAssignments(userID) {
       // include[]=submission embeds the student's own submission (on-time rate, UC21).
       { order_by: "due_at", "include[]": "submission" }
     );
-    byCourse.push({ course, assignments });
+    // UC14: grading categories and their weights, for the grade impact panel.
+    const groups = await canvasGetAll(baseURL, token, `/api/v1/courses/${course.id}/assignment_groups`);
+    byCourse.push({ course, groups, assignments });
   }
 
   return storeAssignments(userID, baseURL, byCourse);
+}
+
+// UC15: how old the stored copy may get before a list request re-syncs it.
+// ponytail: two requests landing together may both sync; dedupe per user if Canvas throttles us.
+const STALE_AFTER_MS = 5 * 60 * 1000;
+
+/**
+ * Re-sync when the stored copy is older than STALE_AFTER_MS, so a submission
+ * made on Canvas reaches the priority list without a manual sync. A failed
+ * sync is logged and the stored rows are served; Settings shows the problem.
+ */
+async function syncIfStale(userID) {
+  if (!await canvasAuth.loadGrant(userID)) return;
+  const last = await lastSyncedAt(userID);
+  if (last && Date.now() - new Date(last).getTime() < STALE_AFTER_MS) return;
+  try {
+    await syncAssignments(userID);
+  } catch (err) {
+    console.warn("Background Canvas sync failed:", err.message);
+  }
 }
 
 export {
   canvasGetAll,
   assertSameOrigin,
   nextLink,
-  syncAssignments
+  syncAssignments,
+  syncIfStale
 };

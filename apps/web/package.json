@@ -15,6 +15,7 @@
   "dependencies": {
     "@canvasplus/auth": "workspace:*",
     "@canvasplus/database": "workspace:*",
+    "@canvasplus/ui": "workspace:*",
     "axios": "^1.20.0",
     "clsx": "2.1.1",
     "jsonwebtoken": "^9.0.3",

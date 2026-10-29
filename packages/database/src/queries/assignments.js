@@ -2,6 +2,7 @@ import { pool } from "../client";
 import { HttpError } from "../errors.js";
 import * as progress from "./assignmentProgress.js";
 import * as estimate from "./estimate.js";
+import { rankPriorities } from "./priorityModel.js";
 
 
 export async function listAssignments(userId, query = {}) {
@@ -36,9 +37,16 @@ export async function listAssignments(userId, query = {}) {
         a.missing,
         a.excused,
         a."completedAt",
+        -- UC14 grade impact inputs: the Canvas score and the grading category's weight
+        a.score,
+        a."groupID",
+        g.name         AS "groupName",
+        g.weight       AS "groupWeight",
+        COALESCE(c."applyGroupWeights", FALSE) AS "groupsWeighted",
         COALESCE(logged.seconds, 0)::INTEGER AS "loggedSeconds"
       FROM "Assignment" a
       JOIN "Course" c ON c.id = a."courseID"
+      LEFT JOIN "AssignmentGroup" g ON g.id = a."groupID"
       LEFT JOIN "AssignmentDetail" ad ON ad."assignmentID" = a.id
       -- Active study time from finished sessions on this assignment (UC24).
       LEFT JOIN LATERAL (
@@ -59,10 +67,22 @@ export async function listAssignments(userId, query = {}) {
 
     const result = await pool.query(query, params);
     // One status combining Canvas's submission with the student's own "Mark done".
-    return result.rows.map((row) => ({
+    const now = Date.now();
+    const rows = result.rows.map((row) => ({
       ...row,
-      completionStatus: progress.completionStatus(row)
+      completionStatus: progress.completionStatus(row, now)
     }));
+    // UC15: rank the open work against itself; finished or locked rows get nulls.
+    const ranked = rankPriorities(rows, now);
+    return rows.map((row) => {
+      const priority = ranked.get(row.id);
+      return {
+        ...row,
+        priorityScore: priority?.score ?? null,
+        priorityRank: priority?.rank ?? null,
+        priorityReason: priority?.reason ?? null
+      };
+    });
 
   } catch (err) {
     if (err instanceof HttpError) throw err;

@@ -26,7 +26,7 @@ import { saveLayout, resetLayout, type LayoutItem, type LayoutResponse } from "@
 import { fetchAnalyticsSummary, localDateKey, type AnalyticsSummary } from "@/lib/analyticsApi";
 import { ApiError } from "@/lib/apiClient";
 import type { Assignment } from "@/lib/assignmentsApi";
-import { THEMES, type ThemeId } from "@/lib/themes";
+import { THEMES, type ThemeId } from "@canvasplus/ui/themes";
 
 const Grid = WidthProvider(GridLayout);
 
@@ -250,7 +250,7 @@ export default function HomeView({
             </div>
           ) : (
             wide && saved && (
-              <button type="button" className={ghostButton} onClick={startEditing}>
+              <button type="button" className={ghostButton} onClick={startEditing} data-tour="customize">
                 <Pencil className="w-4 h-4" /> Customize
               </button>
             )
@@ -271,7 +271,7 @@ export default function HomeView({
           </div>
         ) : !wide ? (
           // Narrow screens: one column, in the order the student arranged.
-          <div className="space-y-4 mt-2">
+          <div className="space-y-4 mt-2" data-tour="home-grid">
             {readingOrder(layout).map((item) => {
               const Widget = WIDGETS[item.i].Component;
               return (
@@ -286,7 +286,7 @@ export default function HomeView({
           </div>
         ) : (
           <div className="flex gap-4 items-start">
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0" data-tour="home-grid">
               {layout.length === 0 && (
                 <p className={`text-sm text-center py-16 ${muted}`}>
                   Your dashboard is empty. Add widgets from the library.

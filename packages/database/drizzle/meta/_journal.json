@@ -12,8 +12,22 @@
     {
       "idx": 1,
       "version": "7",
-      "when": 1791651669376,
-      "tag": "0001_hot_redwing",
+      "when": 1792696435224,
+      "tag": "0001_dusty_silvermane",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792840958603,
+      "tag": "0002_wild_siren",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793240133584,
+      "tag": "0003_numerous_major_mapleleaf",
       "breakpoints": true
     }
   ]

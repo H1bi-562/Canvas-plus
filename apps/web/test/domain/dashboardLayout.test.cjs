@@ -125,7 +125,7 @@ test("client widget registry matches the server", () => {
 });
 
 test("client theme list matches the server", () => {
-  const { THEMES, DEFAULT_THEME } = require("../../lib/themes.ts");
+  const { THEMES, DEFAULT_THEME } = require("@canvasplus/ui/themes");
   assert.deepEqual(THEMES.map(t => t.id), layouts.THEMES);
   assert.equal(DEFAULT_THEME, layouts.DEFAULT_THEME);
 });

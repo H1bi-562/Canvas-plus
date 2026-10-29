@@ -1,5 +1,5 @@
 {
-  "id": "2949b599-8167-47c8-9fee-4980f22912cd",
+  "id": "ed558ea5-ac18-4412-92ad-26feca2df5c0",
   "prevId": "8462aad9-cb40-4b00-aff3-978161d8711b",
   "version": "7",
   "dialect": "postgresql",
@@ -255,6 +255,18 @@
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
+        },
+        "score": {
+          "name": "score",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "groupID": {
+          "name": "groupID",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
@@ -336,6 +348,19 @@
           ],
           "onDelete": "cascade",
           "onUpdate": "no action"
+        },
+        "Assignment_groupID_AssignmentGroup_id_fk": {
+          "name": "Assignment_groupID_AssignmentGroup_id_fk",
+          "tableFrom": "Assignment",
+          "tableTo": "AssignmentGroup",
+          "columnsFrom": [
+            "groupID"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -390,37 +415,9 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
-        },
-        "contentHash": {
-          "name": "contentHash",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "generatedAt": {
-          "name": "generatedAt",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
         }
       },
-      "indexes": {
-        "idx_assignmentdetail_contenthash": {
-          "name": "idx_assignmentdetail_contenthash",
-          "columns": [
-            {
-              "expression": "contentHash",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "AssignmentDetail_assignmentID_Assignment_id_fk": {
           "name": "AssignmentDetail_assignmentID_Assignment_id_fk",
@@ -457,6 +454,87 @@
           "value": "\"AssignmentDetail\".\"estimateSource\" in ('student', 'ai')"
         }
       },
+      "isRLSEnabled": false
+    },
+    "public.AssignmentGroup": {
+      "name": "AssignmentGroup",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "courseID": {
+          "name": "courseID",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "canvasGroupID": {
+          "name": "canvasGroupID",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "weight": {
+          "name": "weight",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {
+        "ux_assignment_group_canvas": {
+          "name": "ux_assignment_group_canvas",
+          "columns": [
+            {
+              "expression": "courseID",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "canvasGroupID",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "AssignmentGroup_courseID_Course_id_fk": {
+          "name": "AssignmentGroup_courseID_Course_id_fk",
+          "tableFrom": "AssignmentGroup",
+          "tableTo": "Course",
+          "columnsFrom": [
+            "courseID"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.CalendarConfig": {
@@ -859,6 +937,12 @@
         "courseCode": {
           "name": "courseCode",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "applyGroupWeights": {
+          "name": "applyGroupWeights",
+          "type": "boolean",
           "primaryKey": false,
           "notNull": false
         },

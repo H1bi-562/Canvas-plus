@@ -10,3 +10,8 @@ dist
 *.tsbuildinfo
 .env.*
 !.env.example
+
+# AI assistant working files - keep local, never commit
+docs/superpowers/
+.superpowers/
+/AGENTS.md

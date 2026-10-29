@@ -1,14 +1,8 @@
 // apps/web/test/domain/aiCache.test.cjs
 // Covers src/queries/aiCache.js: the AssignmentDetail-backed cache that
-// keeps the AI route from re-generating output for content it has already
-// seen. Ported from the pre-rewrite test/aiCache.test.js to this package's
-// test convention (see assignmentProgress.test.cjs): CommonJS, package-alias
-// imports, @example.invalid throwaway user/course.
-//
-//   npm test
-//
-// hashAssignmentContent is pure and runs with no database. The withAICache
-// block touches the real database with an @example.invalid user/course and
+// keeps an AI route from re-generating output for content it has already
+// seen. hashAssignmentContent is pure and runs with no database. The rest
+// touches the real database with an @example.invalid user/course and
 // deletes them afterwards.
 
 require("dotenv").config({ quiet: true });
@@ -109,6 +103,27 @@ test("editing the assignment content is a cache miss and regenerates", async () 
   assert.equal(calls, 1, "changed content should miss the old cache entry");
   assert.equal(result.fromCache, false);
   assert.equal(result.summary, "Updated summary for the revised prompt");
+});
+
+// -- saveGeneratedDetail: COALESCE regression -------------------------------
+// A caller that only generates a summary (UC13) must not wipe out subtasks
+// or a priorityScore some other feature already stored on the same row.
+
+test("saveGeneratedDetail with only a summary leaves existing subtasks/priorityScore alone", async () => {
+  await aiCache.saveGeneratedDetail(assignmentId, "unrelated-hash-1", {
+    subtasks: ["Research", "Draft", "Edit"],
+    priorityScore: 42,
+  });
+
+  const summaryOnly = await aiCache.saveGeneratedDetail(assignmentId, "unrelated-hash-2", {
+    summary: "Just a summary update",
+    source: "extractive",
+  });
+
+  assert.equal(summaryOnly.summary, "Just a summary update");
+  assert.deepEqual(summaryOnly.subtasks, ["Research", "Draft", "Edit"], "subtasks from the earlier write must survive");
+  assert.equal(summaryOnly.priorityScore, 42, "priorityScore from the earlier write must survive");
+  assert.equal(summaryOnly.summarySource, "extractive");
 });
 
 test("cleanup: remove the throwaway user (cascades to Assignment/AssignmentDetail)", async () => {

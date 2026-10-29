@@ -4,7 +4,7 @@
 // student's other tabs, and keeps a theme picked offline until it is saved.
 
 import type { LayoutItem } from "@/app/(dashboard)/assignments/_api/layoutApi";
-import { getTheme, type ThemeId } from "@/lib/themes";
+import { getTheme, type ThemeId } from "@canvasplus/ui/themes";
 
 export interface CachedPreferences {
   theme: ThemeId;

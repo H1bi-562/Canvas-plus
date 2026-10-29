@@ -1,0 +1,7 @@
+@import "@canvasplus/tailwindcss/base.css";
+@import "@canvasplus/ui/styles.css";
+@source "./";
+
+body {
+  width: 360px;
+}

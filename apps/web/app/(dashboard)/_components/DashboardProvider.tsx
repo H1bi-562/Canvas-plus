@@ -7,8 +7,12 @@ import { Assignment, fetchAssignments } from "@/lib/assignmentsApi";
 import { ApiError, logout } from "@/lib/apiClient";
 import { fetchLayout, saveTheme, type LayoutItem, type LayoutResponse } from "@/app/(dashboard)/assignments/_api/layoutApi";
 import { clearPreferences, readPreferences, subscribePreferences, writePreferences } from "@/lib/preferencesCache";
-import { DEFAULT_THEME, getTheme, type ThemeId } from "@/lib/themes";
+import { DEFAULT_THEME, getTheme, type ThemeId } from "@canvasplus/ui/themes";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
+
+// UC23: only downloaded while a first-time walkthrough is running.
+const Walkthrough = dynamic(() => import("./walkthrough/Walkthrough"), { ssr: false });
 
 type ViewType = "assignments" | "calendar" | "focus" | "analytics" | "profile" | "auth";
 
@@ -61,22 +65,40 @@ function useDashboardState(initialName: string, userId: string) {
     router.refresh();
   }, [router, userId]);
 
-  const loadAssignments = useCallback(async () => {
+  /** Resolves true when the list loaded. refresh lets the server re-sync a stale Canvas copy first. */
+  const loadAssignments = useCallback(async (refresh = true) => {
     setAssignmentsLoading(true);
     setAssignmentsError(null);
     try {
-      setAssignments(await fetchAssignments());
+      const next = await fetchAssignments(refresh);
+      // Keep the old array when nothing changed, so a background refresh re-renders nothing.
+      setAssignments((prev) => JSON.stringify(prev) === JSON.stringify(next) ? prev : next);
+      return true;
     } catch (err) {
       // The auth cookie expired or was revoked: back to the login screen.
-      if (err instanceof ApiError && err.status === 401) return signOutLocally();
-      setAssignmentsError(err instanceof ApiError ? err.message : "Could not load assignments.");
+      if (err instanceof ApiError && err.status === 401) signOutLocally();
+      else setAssignmentsError(err instanceof ApiError ? err.message : "Could not load assignments.");
+      return false;
     } finally {
       setAssignmentsLoading(false);
     }
   }, [signOutLocally]);
 
+  // UC15 – keep submission status, and so the priority list, current without a manual
+  // sync: show the stored copy at once, then let the server re-sync it from Canvas when
+  // it is over 5 minutes old. Again on focus (back from submitting on Canvas) and every
+  // 5 minutes while visible; each is one cheap request while the copy is fresh.
   useEffect(() => {
-    void loadAssignments();
+    void loadAssignments(false).then((ok) => ok && loadAssignments());
+    const refresh = () => {
+      if (document.visibilityState === "visible") void loadAssignments();
+    };
+    window.addEventListener("focus", refresh);
+    const timer = window.setInterval(refresh, 5 * 60 * 1000);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      window.clearInterval(timer);
+    };
   }, [loadAssignments]);
 
   // ── Theme + layout sync ────────────────────────────────────────────────────
@@ -207,9 +229,11 @@ export function useDashboard() {
   return context;
 }
 
-export default function DashboardProvider({ initialName, userId, children }: { initialName: string; userId: string; children: ReactNode }) {
+export default function DashboardProvider({ initialName, userId, walkthroughPending = false, children }: { initialName: string; userId: string; walkthroughPending?: boolean; children: ReactNode }) {
   const state = useDashboardState(initialName, userId);
-  const { darkMode, signedInUser, handleLogout, logoutError, loggingOut, selectedAssignmentData, setSelectedAssignment, getPriorityColor, loadAssignments } = state;
+  // The server prop stays stale until the next refresh, so ending the tour is tracked here too.
+  const [showWalkthrough, setShowWalkthrough] = useState(walkthroughPending);
+  const { darkMode, signedInUser, handleLogout, logoutError, loggingOut, selectedAssignmentData, setSelectedAssignment, getPriorityColor, loadAssignments, assignments } = state;
   return <DashboardContext.Provider value={state}>
     <div className={`size-full flex flex-col ${darkMode ? "bg-[var(--cp-page)]" : "bg-gray-50"}`}>
       {/* Top Bar */}
@@ -235,9 +259,11 @@ export default function DashboardProvider({ initialName, userId, children }: { i
       {logoutError && <p role="alert" className="px-6 py-2 text-red-600">{logoutError}</p>}
       {children}
       <BottomNav darkMode={darkMode} />
+      {showWalkthrough && <Walkthrough onEnd={() => setShowWalkthrough(false)} />}
       {/* Assignment Detail Panel */}
       <AssignmentDetails
         assignment={selectedAssignmentData}
+        assignments={assignments}
         darkMode={darkMode}
         onClose={() => setSelectedAssignment(null)}
         getPriorityColor={getPriorityColor}

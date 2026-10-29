@@ -1,7 +1,7 @@
 # CanvasPlus
 
 A pnpm/Turborepo workspace with a Next.js web app and a WXT browser extension.
-The extension opens the web app in a new tab in Chrome or Firefox.
+The extension's toolbar popup shows the student's top priorities in Chrome or Firefox.
 
 ## Local setup
 
@@ -28,16 +28,17 @@ The database package retains parameterized PostgreSQL queries for the existing a
 | Directory | Purpose |
 | --- | --- |
 | `apps/web` | Next.js pages and authenticated API routes |
-| `apps/extension` | WXT toolbar action that opens the web app |
+| `apps/extension` | WXT toolbar popup with the priority list and a link to the web app |
 | `packages/auth` | Better Auth server and browser entry points |
 | `packages/database` | Drizzle schema, migrations, encrypted secrets, and domain queries |
 | `packages/tailwindcss` | Shared Tailwind v4 CSS and PostCSS configuration |
+| `packages/ui` | React components and colour themes shared by the web app and extension |
 | `packages/eslint` | Base, Next.js, and extension lint configurations |
 | `packages/vitest` | Node and React/jsdom test configurations |
 
 Pages live at `/assignments`, `/calendar`, `/focus`, `/analytics`, and `/settings`.
 Route-only components and clients live in `_components` and `_api` folders.
-Shared components and API types remain in `components` and `lib`.
+Shared components and API types remain in `components` and `lib`; components the extension also renders live in `packages/ui`.
 There are no empty `_actions` folders because mutations use HTTP handlers.
 
 ### Shared configuration imports
@@ -97,7 +98,8 @@ The default is http://localhost:3000.
 This is a public build-time setting; never place secrets in it.
 Chrome output is `apps/extension/.output/chrome-mv3`; load it as an unpacked extension in Developer mode.
 Firefox output is `apps/extension/.output/firefox-mv2`; load its manifest as a temporary add-on using `about:debugging`.
-The launcher needs no host, storage, or tab-reading permissions.
+The only permission is a host permission for that URL's host, so the popup can read the web app's API with the student's session cookie; it needs no storage or tab-reading permissions.
+The popup uses the theme saved in the web app and opens an assignment on Canvas when it is clicked.
 Set the final Firefox add-on ID before publishing to a store.
 
 ## Canvas and existing UI limits
@@ -121,6 +123,22 @@ Students connect from Settings; Better Auth keeps the encrypted grant in the `Ac
 
 Without these variables the Google toggle is hidden and Settings says Google is not configured.
 `calendar.readonly` is a sensitive scope, so a public deployment needs Google's app verification.
+
+## Priority scoring (UC15)
+
+Every open assignment (not submitted, done, or excused, and not locked by Canvas) gets a 0–100 score and a rank against the student's other open work.
+The score is 55% urgency (hours until due minus the work left), 30% impact (its share of the course's points), and 15% effort (estimated minutes minus logged study time); the rules are in `packages/database/src/queries/priorityModel.js`.
+`GET /api/assignments` returns `priorityScore`, `priorityRank`, and `priorityReason` on each row.
+With `?refresh=stale` it first re-syncs Canvas when the stored copy is over 5 minutes old, so a submission made on Canvas drops off the list on its own.
+The dashboard asks for that on load, on window focus, and every 5 minutes; the extension asks each time its popup opens.
+
+## Grade impact (UC14)
+
+Canvas sync also stores each course's assignment groups (grading categories) and their weights in `AssignmentGroup`, whether the course weights them (`Course.applyGroupWeights`), and the student's score on each assignment.
+Assignments Canvas leaves out of the final grade get no group, so they never count.
+The assignment details panel shows the assignment's category, its share of the final grade, and the current course grade, and lets the student type or drag a what-if score to see the projected course grade; nothing is saved.
+The math follows Canvas's current grade and lives in `apps/web/lib/gradeImpact.ts`; it ignores drop-lowest rules.
+Run `pnpm db:migrate` after pulling: the list query reads the new columns.
 
 The existing AI actions, notifications, and website-blocking controls remain presentation-only features.
 The extension does not block websites.
