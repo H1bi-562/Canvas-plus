@@ -39,5 +39,24 @@ export interface PriorityScore {
     score: number;
     level: PriorityLevel;
     breakdown: {urgency: number, impact: number, effort: number};
+} 
+export interface Subtask {
+  id: number;
+  assignmentId: string;
+  title: string;
+  estimatedHours: number;
+  status: AssignmentStatus;
+  position: number;
 }
-  
+
+export interface SubtaskSuggestion {
+  title: string;
+  estimatedHours: number;
+}
+
+export interface SubtaskRollup {
+  total: number;
+  done: number;
+  remainingHours: number;
+  progressPct: number;
+}
