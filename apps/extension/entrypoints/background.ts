@@ -35,14 +35,14 @@ async function applyBlocking(settings: FocusSettings) {
   const domains = domainsFromSites(settings.sites);
   const addRules = settings.enabled
     ? domains.map((domain, index) => ({
-        id: RULE_ID_START + index,
-        priority: 1,
-        action: { type: "block" as const },
-        condition: {
-          urlFilter: `||${domain}^`,
-          resourceTypes: ["main_frame" as const],
-        },
-      }))
+      id: RULE_ID_START + index,
+      priority: 1,
+      action: { type: "block" as const },
+      condition: {
+        urlFilter: `||${domain}^`,
+        resourceTypes: ["main_frame" as const]
+      }
+    }))
     : [];
 
   await browser.declarativeNetRequest.updateDynamicRules({ removeRuleIds, addRules });
@@ -54,10 +54,10 @@ async function restoreBlocking() {
   const settings = saved[SETTINGS_KEY] as Partial<FocusSettings> | undefined;
   await applyBlocking({
     enabled: settings?.enabled === true,
-    sites: Array.isArray(settings?.sites) ? settings.sites.filter((site): site is string => typeof site === "string") : [],
+    sites: Array.isArray(settings?.sites) ? settings.sites.filter((site): site is string => typeof site === "string") : []
   });
 }
-  export default defineBackground(() => {
+export default defineBackground(() => {
   browser.runtime.onMessage.addListener((message: unknown) => {
     if (
       !message ||
@@ -76,9 +76,9 @@ async function restoreBlocking() {
       enabled: incoming.enabled === true,
       sites: Array.isArray(incoming.sites)
         ? incoming.sites.filter(
-            (site): site is string => typeof site === "string"
-          )
-        : [],
+          (site): site is string => typeof site === "string"
+        )
+        : []
     };
 
     void applyBlocking(settings).catch((error) =>

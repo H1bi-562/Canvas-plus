@@ -39,7 +39,7 @@ function useDashboardState(initialName: string, userId: string) {
       source: "canvasplus-web",
       type: "FOCUS_SETTINGS",
       enabled,
-      sites: sites.filter((site) => site.trim().length > 0),
+      sites: sites.filter((site) => site.trim().length > 0)
     };
 
     try {

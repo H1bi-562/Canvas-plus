@@ -7,12 +7,12 @@ export default defineConfig({
     server: {
       port: 3001,
       origin: "http://localhost:3001",
-      strictPort: true,
-    },
+      strictPort: true
+    }
   },
 
   vite: () => ({
-    plugins: [react()],
+    plugins: [react()]
   }),
 
   manifest: () => {
@@ -20,27 +20,27 @@ export default defineConfig({
       name: "CanvasPlus",
       description: "Your top CanvasPlus priorities at a glance",
       action: {
-        default_title: "CanvasPlus",
+        default_title: "CanvasPlus"
       },
 
       permissions: [
         "declarativeNetRequestWithHostAccess",
-        "storage",
+        "storage"
       ],
 
       // Needed to block the sites entered in Focus Mode
       host_permissions: [
-        "<all_urls>",
+        "<all_urls>"
       ],
 
       browser_specific_settings: {
         gecko: {
           id: "canvasplus@example.invalid",
           data_collection_permissions: {
-            required: ["none"],
-          },
-        },
-      },
+            required: ["none"]
+          }
+        }
+      }
     };
-  },
+  }
 });

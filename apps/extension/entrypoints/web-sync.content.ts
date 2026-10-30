@@ -21,7 +21,7 @@ function send(settings: { enabled: boolean; sites: string[] }) {
     source: "canvasplus-web",
     type: "FOCUS_SETTINGS",
     enabled: settings.enabled,
-    sites: settings.sites,
+    sites: settings.sites
   }).catch(() => {
     // The extension may be reloading during development.
   });
@@ -43,10 +43,10 @@ export default defineContentScript({
       const saved = JSON.parse(raw) as { enabled?: unknown; sites?: unknown };
       send({
         enabled: saved.enabled === true,
-        sites: Array.isArray(saved.sites) ? saved.sites.filter((site): site is string => typeof site === "string") : [],
+        sites: Array.isArray(saved.sites) ? saved.sites.filter((site): site is string => typeof site === "string") : []
       });
     } catch {
       // The web app will publish a fresh value after it hydrates.
     }
-  },
+  }
 });
