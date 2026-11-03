@@ -262,6 +262,7 @@ export default function DashboardProvider({ initialName, userId, walkthroughPend
       {showWalkthrough && <Walkthrough onEnd={() => setShowWalkthrough(false)} />}
       {/* Assignment Detail Panel */}
       <AssignmentDetails
+        key={selectedAssignmentData?.id}
         assignment={selectedAssignmentData}
         assignments={assignments}
         darkMode={darkMode}

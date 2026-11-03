@@ -50,6 +50,7 @@ export default function AssignmentDetails({
     try {
       const res = await generateSubtasks(assignment.id);
       setSubtasks(res.subtasks);
+      onChanged();
     } catch (err) {
       setSubtaskError(err instanceof ApiError ? err.message : "Could not break this into tasks.");
     } finally {
