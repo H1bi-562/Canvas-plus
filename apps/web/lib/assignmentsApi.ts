@@ -22,6 +22,7 @@ interface AssignmentRow {
   priorityRank: number | null;
   priorityReason: string | null;
   summary?: string | null;
+  subtasks?: string[] | null;
   estimatedMinutes: number | null;
   estimateSource: "student" | "ai" | null;
   submittedAt: string | null;
@@ -65,6 +66,7 @@ export interface Assignment {
   htmlURL: string | null;
   isDemo: boolean;
   summary?: string | null;
+  subtasks?: string[] | null;
   estimatedMinutes: number | null;
   estimateSource: "student" | "ai" | null;
   /** Active minutes from finished study sessions on this assignment. */
@@ -131,6 +133,7 @@ export function toAssignment(row: AssignmentRow, now: number = Date.now()): Assi
     htmlURL: row.htmlURL,
     isDemo: Boolean(row.isDemo),
     summary: row.summary ?? null,
+    subtasks: row.subtasks ?? null,
     estimatedMinutes: row.estimatedMinutes,
     estimateSource: row.estimateSource,
     loggedMinutes: Math.round((row.loggedSeconds || 0) / 60),
@@ -203,6 +206,19 @@ export interface SummaryResult {
 /** UC13: generate and store an AI summary for one assignment. */
 export function generateSummary(assignmentID: string) {
   return apiRequest<SummaryResult>(`/api/assignments/${assignmentID}/summary`, "POST", {});
+}
+
+/** UC10: an AI-generated checklist of subtasks for an assignment. */
+export interface SubtaskResult {
+  assignmentID: string;
+  subtasks: string[];
+  /** 'ai' when a real LLM produced it, otherwise the deterministic breakdown. */
+  source: "ai" | "extractive" | "extractive-fallback";
+}
+
+/** UC10: break an assignment into a subtask checklist and store it. */
+export function generateSubtasks(assignmentID: string) {
+  return apiRequest<SubtaskResult>(`/api/assignments/${assignmentID}/subtasks`, "POST", {});
 }
 
 /** "Mark done" (true) or undo it (false). Canvas sync never overwrites this. */
