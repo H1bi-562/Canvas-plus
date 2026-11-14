@@ -151,7 +151,7 @@ export function placeAssignments(assignments, openBlocks) {
     if (blockIndex === -1) {
       unscheduled.push({
         assignmentId: assignment.id,
-        reason: dueAt ? "no open block of that length before the due date" : "no open block of that length",
+        reason: dueAt ? "no open block of that length before the due date" : "no open block of that length"
       });
       continue;
     }
@@ -188,7 +188,7 @@ export async function autoScheduleForUser(userID, {
   windowStart = new Date(),
   windowEnd = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
   dailyStartHour = 9,
-  dailyEndHour = 21,
+  dailyEndHour = 21
 } = {}) {
   // Everything priorityModel.rankPriorities needs to score the student's full
   // open workload -- the same fields assignments.js's listAssignments reads.
@@ -245,7 +245,7 @@ export async function autoScheduleForUser(userID, {
     id: c.id,
     estimatedMinutes: c.estimatedMinutes,
     dueAt: c.dueAt,
-    priority: ranked.get(c.id)?.score ?? null,
+    priority: ranked.get(c.id)?.score ?? null
   }));
 
   const { scheduled, unscheduled } = placeAssignments(assignments, openBlocks);

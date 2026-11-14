@@ -23,7 +23,7 @@ let userId, courseId, assignmentId;
 
 async function generatedAt() {
   const { rows } = await pool.query(
-    `SELECT "generatedAt" FROM "AssignmentDetail" WHERE "assignmentID" = $1`,
+    "SELECT \"generatedAt\" FROM \"AssignmentDetail\" WHERE \"assignmentID\" = $1",
     [assignmentId]
   );
   return rows[0]?.generatedAt ?? null;
@@ -73,7 +73,7 @@ test("editing the assignment's content is a cache miss and regenerates", async (
   const firstStamp = await generatedAt();
 
   await pool.query(
-    `UPDATE "Assignment" SET description = $2 WHERE id = $1`,
+    "UPDATE \"Assignment\" SET description = $2 WHERE id = $1",
     [assignmentId, "Write a 750 word essay on the effects of the French Revolution on neighboring countries. Cite at least five sources."]
   );
 
@@ -85,16 +85,16 @@ test("editing the assignment's content is a cache miss and regenerates", async (
 
 test("a summary-only generation does not disturb subtasks/priorityScore set by other features", async () => {
   await pool.query(
-    `UPDATE "AssignmentDetail" SET subtasks = $2, "priorityScore" = $3 WHERE "assignmentID" = $1`,
+    "UPDATE \"AssignmentDetail\" SET subtasks = $2, \"priorityScore\" = $3 WHERE \"assignmentID\" = $1",
     [assignmentId, JSON.stringify(["Outline", "Draft", "Cite sources"]), 65]
   );
 
   // Force a miss so generateSummary actually writes through saveGeneratedDetail.
-  await pool.query(`UPDATE "Assignment" SET title = 'Essay 1 (v3)' WHERE id = $1`, [assignmentId]);
+  await pool.query("UPDATE \"Assignment\" SET title = 'Essay 1 (v3)' WHERE id = $1", [assignmentId]);
   await generateSummary(userId, assignmentId);
 
   const { rows: [row] } = await pool.query(
-    `SELECT subtasks, "priorityScore" FROM "AssignmentDetail" WHERE "assignmentID" = $1`,
+    "SELECT subtasks, \"priorityScore\" FROM \"AssignmentDetail\" WHERE \"assignmentID\" = $1",
     [assignmentId]
   );
   assert.deepEqual(row.subtasks, ["Outline", "Draft", "Cite sources"]);

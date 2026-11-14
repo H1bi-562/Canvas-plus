@@ -112,12 +112,12 @@ test("editing the assignment content is a cache miss and regenerates", async () 
 test("saveGeneratedDetail with only a summary leaves existing subtasks/priorityScore alone", async () => {
   await aiCache.saveGeneratedDetail(assignmentId, "unrelated-hash-1", {
     subtasks: ["Research", "Draft", "Edit"],
-    priorityScore: 42,
+    priorityScore: 42
   });
 
   const summaryOnly = await aiCache.saveGeneratedDetail(assignmentId, "unrelated-hash-2", {
     summary: "Just a summary update",
-    source: "extractive",
+    source: "extractive"
   });
 
   assert.equal(summaryOnly.summary, "Just a summary update");

@@ -37,7 +37,7 @@ export function hashAssignmentContent({ title, description, points }) {
   const normalized = JSON.stringify({
     title: title ?? "",
     description: description ?? "",
-    points: points ?? null,
+    points: points ?? null
   });
   return crypto.createHash("sha256").update(normalized).digest("hex");
 }
@@ -89,7 +89,7 @@ export async function saveGeneratedDetail(assignmentId, contentHash, { summary, 
         subtasks ? JSON.stringify(subtasks) : null,
         priorityScore ?? null,
         contentHash,
-        source ?? null,
+        source ?? null
       ]
     );
     return result.rows[0];

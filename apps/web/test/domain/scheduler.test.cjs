@@ -61,7 +61,7 @@ test("two overlapping busy events are merged, not left with a bogus sliver betwe
   const windowEnd    = new Date("2026-10-06T00:00:00");
   const busy = [
     { start: new Date("2026-10-05T12:00:00"), end: new Date("2026-10-05T14:00:00") },
-    { start: new Date("2026-10-05T13:00:00"), end: new Date("2026-10-05T15:00:00") },
+    { start: new Date("2026-10-05T13:00:00"), end: new Date("2026-10-05T15:00:00") }
   ];
 
   const blocks = findOpenBlocks(busy, windowStart, windowEnd, { dailyStartHour: 9, dailyEndHour: 21 });
@@ -110,7 +110,7 @@ test("with no priority set on either, the assignment due sooner is placed first 
   const block = { start: new Date("2026-10-05T09:00:00"), end: new Date("2026-10-05T10:00:00") }; // fits exactly one
   const assignments = [
     { id: "due-later",  estimatedMinutes: 60, dueAt: new Date("2026-10-10T00:00:00") },
-    { id: "due-sooner", estimatedMinutes: 60, dueAt: new Date("2026-10-06T00:00:00") },
+    { id: "due-sooner", estimatedMinutes: 60, dueAt: new Date("2026-10-06T00:00:00") }
   ];
 
   const { scheduled, unscheduled } = placeAssignments(assignments, [block]);
@@ -124,7 +124,7 @@ test("UC15 priority order wins over due date: the higher-priority assignment is 
   const block = { start: new Date("2026-10-05T09:00:00"), end: new Date("2026-10-05T10:00:00") }; // fits exactly one
   const assignments = [
     { id: "low-priority-due-soon",  estimatedMinutes: 60, dueAt: new Date("2026-10-06T00:00:00"), priority: 10 },
-    { id: "high-priority-due-late", estimatedMinutes: 60, dueAt: new Date("2026-10-10T00:00:00"), priority: 90 },
+    { id: "high-priority-due-late", estimatedMinutes: 60, dueAt: new Date("2026-10-10T00:00:00"), priority: 90 }
   ];
 
   const { scheduled, unscheduled } = placeAssignments(assignments, [block]);
@@ -138,7 +138,7 @@ test("an assignment with no priority score sorts after every scored one", () => 
   const block = { start: new Date("2026-10-05T09:00:00"), end: new Date("2026-10-05T10:00:00") }; // fits exactly one
   const assignments = [
     { id: "unscored", estimatedMinutes: 60, dueAt: new Date("2026-10-06T00:00:00") },           // priority omitted
-    { id: "scored",   estimatedMinutes: 60, dueAt: new Date("2026-10-10T00:00:00"), priority: 1 }, // lowest possible score, but it IS scored
+    { id: "scored",   estimatedMinutes: 60, dueAt: new Date("2026-10-10T00:00:00"), priority: 1 } // lowest possible score, but it IS scored
   ];
 
   const { scheduled } = placeAssignments(assignments, [block]);
@@ -187,7 +187,7 @@ test("autoScheduleForUser places the assignment without overlapping the existing
   );
   const assignmentId = assignment.rows[0].id;
   await pool.query(
-    `INSERT INTO "AssignmentDetail" ("assignmentID", "estimatedMinutes") VALUES ($1, 90)`,
+    "INSERT INTO \"AssignmentDetail\" (\"assignmentID\", \"estimatedMinutes\") VALUES ($1, 90)",
     [assignmentId]
   );
 
@@ -237,7 +237,7 @@ test("priority order beats due-date order end to end: a far-due but high-share a
     [userId, courseId, dueAt]
   );
   await pool.query(
-    `INSERT INTO "AssignmentDetail" ("assignmentID", "estimatedMinutes", "priorityScore") VALUES ($1, 60, 10)`,
+    "INSERT INTO \"AssignmentDetail\" (\"assignmentID\", \"estimatedMinutes\", \"priorityScore\") VALUES ($1, 60, 10)",
     [low.rows[0].id]
   );
 
@@ -247,7 +247,7 @@ test("priority order beats due-date order end to end: a far-due but high-share a
     [userId, courseId, dueAt]
   );
   await pool.query(
-    `INSERT INTO "AssignmentDetail" ("assignmentID", "estimatedMinutes", "priorityScore") VALUES ($1, 60, 90)`,
+    "INSERT INTO \"AssignmentDetail\" (\"assignmentID\", \"estimatedMinutes\", \"priorityScore\") VALUES ($1, 60, 90)",
     [high.rows[0].id]
   );
 
