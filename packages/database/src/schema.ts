@@ -152,3 +152,36 @@ export const rewardRoll = pgTable("RewardRoll", {
   uniqueIndex("ux_roll_assignment").on(t.userID, t.assignmentID).where(sql`${t.assignmentID} is not null`),
   uniqueIndex("ux_roll_session").on(t.studySessionID).where(sql`${t.studySessionID} is not null`),
   index("roll_user").on(t.userID, t.rolledAt)]);
+
+// UC16 Event-Driven Scheduler (Jace Orozco) -- the job queue. The web app (and later the
+// Canvas sync) adds a row; the worker in apps/jobs claims it, runs it, and writes the
+// outcome back. Postgres is the queue, so there is no extra service to run or deploy.
+//
+// status   queued -> running -> completed | failed. A failed attempt with tries left
+//          goes back to queued with runAt pushed into the future (retry backoff).
+// lease    lockedBy/lockedUntil mark which worker has a running job and for how long;
+//          a job whose lease ran out (the worker died) may be claimed again.
+// dedupe   at most one open (queued or running) job per user, type and dedupeKey, so a
+//          burst of the same event becomes one job instead of a pile of them.
+export const job = pgTable("Job", {
+  id: id(), userID: uuid("userID").notNull().references(() => user.id, { onDelete: "cascade" }),
+  type: text("type").notNull(), payload: jsonb("payload").notNull().default({}),
+  status: text("status").notNull().default("queued"),
+  attempts: integer("attempts").notNull().default(0), maxAttempts: integer("maxAttempts").notNull().default(3),
+  runAt: time("runAt").notNull().defaultNow(), lockedBy: text("lockedBy"), lockedUntil: time("lockedUntil"),
+  dedupeKey: text("dedupeKey"), result: jsonb("result"), lastError: text("lastError"),
+  startedAt: time("startedAt"), finishedAt: time("finishedAt"), ...timestamps()
+}, t => [check("job_status", sql`${t.status} in ('queued', 'running', 'completed', 'failed')`),
+  check("job_attempts", sql`${t.attempts} >= 0 and ${t.maxAttempts} between 1 and 10`),
+  index("job_ready").on(t.runAt).where(sql`${t.status} = 'queued'`),
+  index("job_user").on(t.userID, t.createdAt),
+  uniqueIndex("ux_job_dedupe").on(t.userID, t.type, t.dedupeKey).where(sql`${t.dedupeKey} is not null and ${t.status} in ('queued', 'running')`)]);
+
+// The trail of what happened to a job and when -- queued, each attempt starting, a
+// handler's own log lines, retries, the final outcome. Read it top to bottom to trace a bug.
+export const jobEvent = pgTable("JobEvent", {
+  id: id(), jobID: uuid("jobID").notNull().references(() => job.id, { onDelete: "cascade" }),
+  event: text("event").notNull(), attempt: integer("attempt").notNull().default(0),
+  message: text("message"), data: jsonb("data"), at: time("at").notNull().defaultNow()
+}, t => [check("job_event", sql`${t.event} in ('queued', 'started', 'log', 'retry_scheduled', 'completed', 'failed')`),
+  index("job_event_job").on(t.jobID, t.at)]);

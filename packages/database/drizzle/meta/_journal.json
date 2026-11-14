@@ -36,6 +36,13 @@
       "when": 1794679842611,
       "tag": "0004_fearless_echo",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794680071050,
+      "tag": "0005_amused_silver_centurion",
+      "breakpoints": true
     }
   ]
 }

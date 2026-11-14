@@ -8,11 +8,12 @@
   },
   "scripts": {
     "dev": "turbo dev --filter=@canvasplus/web",
+    "dev:jobs": "pnpm --filter @canvasplus/jobs dev",
     "build": "turbo build",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "test": "turbo test",
-    "test:integration": "pnpm --filter @canvasplus/database test:integration && pnpm --filter @canvasplus/auth test:integration && pnpm --filter @canvasplus/web test:integration",
+    "test:integration": "pnpm --filter @canvasplus/database test:integration && pnpm --filter @canvasplus/auth test:integration && pnpm --filter @canvasplus/web test:integration && pnpm --filter @canvasplus/jobs test:integration",
     "db:generate": "pnpm --filter @canvasplus/database db:generate",
     "db:migrate": "pnpm --filter @canvasplus/database db:migrate"
   },

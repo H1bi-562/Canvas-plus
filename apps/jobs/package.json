@@ -1,0 +1,27 @@
+{
+  "name": "@canvasplus/jobs",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --exclude '**/*.integration.test.*'",
+    "test:integration": "vitest run --config vitest.integration.config.ts"
+  },
+  "dependencies": {
+    "@canvasplus/database": "workspace:*",
+    "dotenv": "^17.4.2",
+    "tsx": "^4.20.0"
+  },
+  "devDependencies": {
+    "@canvasplus/eslint": "workspace:*",
+    "@canvasplus/vitest": "workspace:*",
+    "@types/node": "^24.0.0",
+    "eslint": "^9.39.0",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.3"
+  }
+}

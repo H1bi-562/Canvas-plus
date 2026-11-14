@@ -29,6 +29,7 @@ The database package retains parameterized PostgreSQL queries for the existing a
 | --- | --- |
 | `apps/web` | Next.js pages and authenticated API routes |
 | `apps/extension` | WXT toolbar popup with the priority list and a link to the web app |
+| `apps/jobs` | Background worker that runs queued jobs (UC16) |
 | `packages/auth` | Better Auth server and browser entry points |
 | `packages/database` | Drizzle schema, migrations, encrypted secrets, and domain queries |
 | `packages/tailwindcss` | Shared Tailwind v4 CSS and PostCSS configuration |
@@ -145,6 +146,20 @@ The extension does not block websites.
 Password reset needs a mail provider and reset-email integration; the UI now states that it is unconfigured instead of claiming an email was sent.
 
 Before/after screenshots and visual verification notes are in `docs/refactor-baseline`.
+
+## Job queue (UC16)
+
+Work that should not hold up a request is queued as a row in `Job` and run by the worker in `apps/jobs`.
+PostgreSQL is the queue, so there is nothing extra to install: run `pnpm dev:jobs` next to `pnpm dev` (it reads the same `.env`), and start more than one if you like, because a job is claimed with `FOR UPDATE SKIP LOCKED` and only ever goes to one worker.
+
+- `POST /api/jobs` with `{ "type": "schedule.assignments", "payload": {} }` answers 202 with the queued job. The same request while the first is still open returns that job with `deduplicated: true`.
+- `GET /api/jobs/:id` returns the status (`queued`, `running`, `completed`, `failed`), the result or last error, and the job's event trail. `GET /api/jobs?status=failed` lists the student's own jobs.
+- A failed attempt is retried after 30 seconds, then 1 minute, doubling up to an hour, for `maxAttempts` (3) tries. A worker that dies mid-job loses its lease after 5 minutes and another worker takes the job over.
+
+The queue rules are in `packages/database/src/queries/jobs.js`.
+To add a job type, add it to `JOB_TYPES` there with a payload check and give it a handler in `apps/jobs/src/handlers.ts`; a test fails until both exist.
+To trace a job, read `events` on `GET /api/jobs/:id`, or search the worker's output for the job id: it logs one JSON line per step.
+`schedule.assignments` runs the UC8 scheduler (`queries/scheduler.js`).
 
 ## Custom rewards (UC20)
 
