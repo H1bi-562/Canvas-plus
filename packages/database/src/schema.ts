@@ -112,3 +112,43 @@ export const dashboardLayout = pgTable("DashboardLayout", {
   userID: uuid("userID").primaryKey().references(() => user.id, { onDelete: "cascade" }),
   layout: jsonb("layout"), theme: text("theme"), updatedAt: time("updatedAt").notNull().defaultNow()
 }, t => [check("layout_array", sql`jsonb_typeof(${t.layout}) = 'array'`)]);
+
+// UC20 Custom Reward System (Jace Orozco) -- rewards a student writes for themselves
+// ("30 minutes of gaming", "boba run") and the history of rolling for them.
+//
+// Rarity: rarityPercent is the reward's drop chance on a roll it is eligible for.
+// Requirements: which finished work may roll it (trigger), and how much of it --
+// a study session of at least minStudyMinutes, or an assignment finished on time.
+// A reward is switched off with active = false rather than deleted, so its past
+// rolls keep pointing at it.
+export const reward = pgTable("Reward", {
+  id: id(), userID: uuid("userID").notNull().references(() => user.id, { onDelete: "cascade" }),
+  name: text("name").notNull(), description: text("description"),
+  rarityPercent: doublePrecision("rarityPercent").notNull(),
+  trigger: text("trigger").notNull().default("any"), minStudyMinutes: integer("minStudyMinutes"),
+  requireOnTime: boolean("requireOnTime").notNull().default(false),
+  active: boolean("active").notNull().default(true), ...timestamps()
+}, t => [check("reward_name", sql`length(btrim(${t.name})) between 1 and 80`),
+  check("reward_rarity", sql`${t.rarityPercent} > 0 and ${t.rarityPercent} <= 100`),
+  check("reward_trigger", sql`${t.trigger} in ('any', 'assignment', 'study_session')`),
+  check("reward_min_study", sql`${t.minStudyMinutes} between 1 and 1440`),
+  index("reward_user").on(t.userID)]);
+
+// One row per roll. rewardName is NULL when the roll came up empty; otherwise it is
+// a copy of the reward's name, so the history still reads correctly after the reward
+// is renamed or deleted (deleting it only clears rewardID).
+// The two partial unique indexes are the anti-farming rule: an assignment or a study
+// session can be rolled for once, however many times it is re-marked done.
+export const rewardRoll = pgTable("RewardRoll", {
+  id: id(), userID: uuid("userID").notNull().references(() => user.id, { onDelete: "cascade" }),
+  rewardID: uuid("rewardID").references(() => reward.id, { onDelete: "set null" }), rewardName: text("rewardName"),
+  trigger: text("trigger").notNull(),
+  assignmentID: uuid("assignmentID").references(() => assignment.id, { onDelete: "set null" }),
+  studySessionID: uuid("studySessionID").references(() => studySession.id, { onDelete: "set null" }),
+  rolledAt: time("rolledAt").notNull().defaultNow(), claimedAt: time("claimedAt")
+}, t => [check("roll_trigger", sql`${t.trigger} in ('assignment', 'study_session')`),
+  check("roll_source", sql`(${t.assignmentID} is null or ${t.trigger} = 'assignment') and (${t.studySessionID} is null or ${t.trigger} = 'study_session')`),
+  check("roll_won", sql`${t.rewardID} is null or ${t.rewardName} is not null`),
+  uniqueIndex("ux_roll_assignment").on(t.userID, t.assignmentID).where(sql`${t.assignmentID} is not null`),
+  uniqueIndex("ux_roll_session").on(t.studySessionID).where(sql`${t.studySessionID} is not null`),
+  index("roll_user").on(t.userID, t.rolledAt)]);

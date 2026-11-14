@@ -3,6 +3,7 @@
 import { createContext, useContext, useCallback, useEffect, useLayoutEffect, useState, type ReactNode } from "react";
 import AssignmentDetails from "@/components/AssignmentDetails";
 import BottomNav from "@/components/BottomNav";
+import RewardRollHost from "@/components/RewardRollHost";
 import { Assignment, fetchAssignments } from "@/lib/assignmentsApi";
 import { ApiError, logout } from "@/lib/apiClient";
 import { fetchLayout, saveTheme, type LayoutItem, type LayoutResponse } from "@/app/(dashboard)/assignments/_api/layoutApi";
@@ -269,6 +270,8 @@ export default function DashboardProvider({ initialName, userId, walkthroughPend
         getPriorityColor={getPriorityColor}
         onChanged={loadAssignments}
       />
+      {/* UC20: the reward roll after an assignment is marked done or a study session ends */}
+      <RewardRollHost darkMode={darkMode} />
     </div>
   </DashboardContext.Provider>;
 }

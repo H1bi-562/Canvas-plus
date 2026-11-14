@@ -4,6 +4,7 @@ import StudyTimer from "@/components/StudyTimer";
 import { FINISHED_STATUSES, type Assignment } from "@/lib/assignmentsApi";
 import EstimateEditor from "@/components/EstimateEditor";
 import type { StudySession } from "@/lib/sessionsApi";
+import { requestRewardRoll } from "@/lib/rewardsApi";
 
 interface FocusModeProps {
   darkMode: boolean;
@@ -111,7 +112,11 @@ export default function FocusMode({
             assignmentID={activeID || null}
             assignmentTitle={activeAssignment?.title ?? null}
             onSessionChange={setOpenSession}
-            onSessionEnd={onAssignmentsChanged}
+            onSessionEnd={(ended) => {
+              onAssignmentsChanged();
+              // UC20: a finished study session earns a reward roll.
+              requestRewardRoll({ trigger: "study_session", sourceID: ended.id, label: activeAssignment?.title ?? "Study session" });
+            }}
           />
         </div>
 

@@ -145,3 +145,10 @@ The extension does not block websites.
 Password reset needs a mail provider and reset-email integration; the UI now states that it is unconfigured instead of claiming an email was sent.
 
 Before/after screenshots and visual verification notes are in `docs/refactor-baseline`.
+
+## Custom rewards (UC20)
+
+`Reward` holds the rewards a student writes for themselves: a name, a rarity (`rarityPercent`, the drop chance), and requirements (`trigger`, `minStudyMinutes`, `requireOnTime`).
+`RewardRoll` records every roll, including empty ones, and its unique indexes allow one roll per assignment and per study session.
+Marking an assignment done or ending a study session calls `requestRewardRoll` (`apps/web/lib/rewardsApi.ts`); `RewardRollHost` posts to `/api/rewards/roll` and shows the outcome in `RewardRollModal`.
+That roll endpoint is not built yet; the response it needs to return is described at the top of `rewardsApi.ts`, and until it exists finishing work shows no modal.

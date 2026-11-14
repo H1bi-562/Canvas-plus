@@ -12,6 +12,7 @@ import { ApiError } from "@/lib/apiClient";
 import CompletionBadge from "@/components/CompletionBadge";
 import EstimateEditor from "@/components/EstimateEditor";
 import GradeImpact from "@/components/GradeImpact";
+import { requestRewardRoll } from "@/lib/rewardsApi";
 
 
 interface AssignmentDetailsProps {
@@ -73,6 +74,8 @@ export default function AssignmentDetails({
     setDoneError(null);
     try {
       await saveCompleted(assignment.id, !markedDone);
+      // UC20: finishing (not un-finishing) an assignment earns a reward roll.
+      if (!markedDone) requestRewardRoll({ trigger: "assignment", sourceID: assignment.id, label: assignment.title });
       onChanged();
     } catch (err) {
       setDoneError(err instanceof ApiError ? err.message : "Could not update this assignment.");
