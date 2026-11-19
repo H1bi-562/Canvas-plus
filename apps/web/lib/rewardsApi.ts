@@ -62,3 +62,72 @@ export function rarityTier(rarityPercent: number): RarityTier {
   if (rarityPercent <= 60) return "Uncommon";
   return "Common";
 }
+
+// ── UC20 reward settings: managing the rewards themselves ────────────────────
+// The CRUD half, behind /api/rewards. A reward's trigger and its two requirements
+// are what decides WHEN it is eligible to be rolled, so the settings screen edits
+// them per reward rather than keeping one global rule.
+
+/** One "Reward" row as the API returns it (no owning user id). */
+export interface Reward {
+  id: string;
+  name: string;
+  description: string | null;
+  /** Drop chance in percent, above 0 and at most 100. */
+  rarityPercent: number;
+  /** Which finished work may roll it. "any" means either kind. */
+  trigger: "any" | RollTrigger;
+  /** Only meaningful for study session rolls: the session must last at least this long. */
+  minStudyMinutes: number | null;
+  /** Only meaningful for assignment rolls: the assignment must have been finished on time. */
+  requireOnTime: boolean;
+  /** A retired reward is never rolled and is hidden unless asked for. */
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** The fields a student can set. Everything except name and rarityPercent is optional. */
+export type RewardInput = Partial<Omit<Reward, "id" | "createdAt" | "updatedAt">> &
+  Pick<Reward, "name" | "rarityPercent">;
+
+/** The student's rewards, newest first. Retired ones are left out unless asked for. */
+export function fetchRewards(includeInactive = false): Promise<Reward[]> {
+  return apiRequest(`/api/rewards${includeInactive ? "?includeInactive=true" : ""}`);
+}
+
+export function createReward(input: RewardInput): Promise<Reward> {
+  return apiRequest("/api/rewards", "POST", input);
+}
+
+/** Change only the fields given; the reward is validated as it will end up. */
+export function updateReward(id: string, changes: Partial<RewardInput>): Promise<Reward> {
+  return apiRequest(`/api/rewards/${id}`, "PATCH", changes);
+}
+
+/** Retire a reward: it stops being rolled, but past rolls keep naming it. */
+export function retireReward(id: string): Promise<Reward> {
+  return apiRequest(`/api/rewards/${id}`, "DELETE");
+}
+
+/** Bring a retired reward back. */
+export function restoreReward(id: string): Promise<Reward> {
+  return apiRequest(`/api/rewards/${id}`, "PATCH", { active: true });
+}
+
+/** How a reward's roll conditions read in one line, for the settings list. */
+export function describeTrigger(reward: Pick<Reward, "trigger" | "minStudyMinutes" | "requireOnTime">): string {
+  if (reward.trigger === "assignment") {
+    return reward.requireOnTime ? "After an assignment finished on time" : "After any finished assignment";
+  }
+  if (reward.trigger === "study_session") {
+    return reward.minStudyMinutes
+      ? `After a study session of ${reward.minStudyMinutes} minutes or more`
+      : "After any study session";
+  }
+  const extras = [
+    reward.requireOnTime ? "on time assignments" : null,
+    reward.minStudyMinutes ? `study sessions of ${reward.minStudyMinutes} minutes or more` : null
+  ].filter(Boolean);
+  return extras.length ? `After ${extras.join(" or ")}` : "After any assignment or study session";
+}
