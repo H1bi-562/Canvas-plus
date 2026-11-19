@@ -38,7 +38,10 @@ export const config = pgTable("Config", {
 
 export const calendarConfig = pgTable("CalendarConfig", {
   id: id(), configID: uuid("configID").notNull().unique().references(() => config.id, { onDelete: "cascade" }),
-  defaultCalendar: text("defaultCalendar"), filteredEvents: jsonb("filteredEvents"), ...timestamps()
+  defaultCalendar: text("defaultCalendar"), filteredEvents: jsonb("filteredEvents"),
+  // UC3: opt in to copying the student's CanvasPlus events out to their Google Calendar.
+  // Off by default -- writing to someone's real calendar is never assumed.
+  syncToGoogle: boolean("syncToGoogle").notNull().default(false), ...timestamps()
 });
 
 export const course = pgTable("Course", {
@@ -87,7 +90,11 @@ export const assignmentDetail = pgTable("AssignmentDetail", {
 
 export const calendarEvent = pgTable("CalendarEvent", {
   id: id(), assignmentID: uuid("assignmentID").notNull().references(() => assignment.id, { onDelete: "cascade" }),
-  title: text("title"), calendar: text("calendar"), eventStart: time("eventStart"), eventEnd: time("eventEnd")
+  title: text("title"), calendar: text("calendar"), eventStart: time("eventStart"), eventEnd: time("eventEnd"),
+  // UC3: this event's copy in the student's Google Calendar. NULL means it was never
+  // pushed (sync off, Google not connected, or the push failed), which is what lets a
+  // later push tell "not synced yet" from "already synced" instead of duplicating.
+  googleEventID: text("googleEventID")
 }, t => [index("calendar_assignment").on(t.assignmentID)]);
 
 export const studySession = pgTable("StudySession", {

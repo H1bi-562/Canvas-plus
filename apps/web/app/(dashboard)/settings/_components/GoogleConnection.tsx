@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
-import { type GoogleStatus, connectGoogle, disconnectGoogle, fetchGoogleStatus } from "@/lib/googleCalendarApi";
+import { type GoogleStatus, connectGoogle, disconnectGoogle, fetchGoogleStatus, fetchSyncToGoogle, saveSyncToGoogle } from "@/lib/googleCalendarApi";
 
 type Notice = { kind: "success" | "error"; text: string } | null;
 
@@ -13,8 +13,10 @@ const errorText = (err: unknown) =>
 
 export default function GoogleConnection({ darkMode }: { darkMode: boolean }) {
   const [status, setStatus] = useState<GoogleStatus | null>(null);
-  const [busy, setBusy] = useState<null | "connect" | "disconnect">(null);
+  const [busy, setBusy] = useState<null | "connect" | "disconnect" | "sync">(null);
   const [notice, setNotice] = useState<Notice>(null);
+  // UC3: whether CanvasPlus events are copied out to Google. Off until asked for.
+  const [syncOut, setSyncOut] = useState(false);
 
   const refreshStatus = useCallback(async () => {
     try {
@@ -22,6 +24,10 @@ export default function GoogleConnection({ darkMode }: { darkMode: boolean }) {
     } catch (err) {
       setNotice({ kind: "error", text: errorText(err) });
     }
+  }, []);
+
+  useEffect(() => {
+    fetchSyncToGoogle().then(setSyncOut).catch(() => setSyncOut(false));
   }, []);
 
   useEffect(() => {
@@ -53,6 +59,29 @@ export default function GoogleConnection({ darkMode }: { darkMode: boolean }) {
       setNotice({ kind: "error", text: errorText(err) });
     } finally {
       await refreshStatus();
+      setBusy(null);
+    }
+  };
+
+  // UC3: turning this on writes to the student's real calendar from then on, so it is
+  // saved immediately and reverted in the UI if the save fails.
+  const handleSyncToggle = async () => {
+    const next = !syncOut;
+    setBusy("sync");
+    setNotice(null);
+    setSyncOut(next);
+    try {
+      await saveSyncToGoogle(next);
+      setNotice({
+        kind: "success",
+        text: next
+          ? "New CanvasPlus events will be added to your Google Calendar. Events you already created stay where they are."
+          : "CanvasPlus will stop adding events to your Google Calendar. Events already there are not removed."
+      });
+    } catch (err) {
+      setSyncOut(!next);
+      setNotice({ kind: "error", text: errorText(err) });
+    } finally {
       setBusy(null);
     }
   };
@@ -92,8 +121,9 @@ export default function GoogleConnection({ darkMode }: { darkMode: boolean }) {
       {status?.configured && !status.connected && (
         <>
           <p className={`${muted} mb-4`}>
-            Show your Google Calendar events next to your Canvas due dates. CanvasPlus only reads
-            your calendars; it never changes them.
+            Show your Google Calendar events next to your Canvas due dates. CanvasPlus reads your
+            calendars, and can add events you create in CanvasPlus to your calendar once you turn
+            that on below. It never touches events it did not create.
           </p>
           <button type="button" onClick={handleConnect} disabled={busy !== null} className={primary}>
             {busy === "connect" && spinner}
@@ -107,6 +137,25 @@ export default function GoogleConnection({ darkMode }: { darkMode: boolean }) {
           <p className={`${muted} mb-4`}>
             Events from every calendar you have visible in Google appear on the Calendar page.
           </p>
+
+          {/* UC3: the outbound half, off unless the student asks for it. */}
+          <label className={`flex items-start gap-3 mb-4 ${muted}`}>
+            <input
+              type="checkbox"
+              checked={syncOut}
+              disabled={busy !== null}
+              onChange={handleSyncToggle}
+              aria-label="Add my CanvasPlus events to Google Calendar"
+            />
+            <span>
+              Also add my CanvasPlus events to Google Calendar.
+              <span className="block text-xs mt-0.5 opacity-80">
+                Only events you create in CanvasPlus. If you connected Google before this option
+                existed, reconnect once so CanvasPlus is allowed to add them.
+              </span>
+            </span>
+          </label>
+
           <button type="button" onClick={handleDisconnect} disabled={busy !== null} className={secondary}>
             {busy === "disconnect" && spinner}
             Disconnect

@@ -25,7 +25,16 @@ export interface GoogleStatus {
 
 export type CalendarSource = "canvas" | "google";
 
+// Reading the calendar list and events. Needed to show Google events on the Calendar page.
 export const GOOGLE_CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.readonly";
+
+// UC3: creating and deleting events CanvasPlus owns. calendar.events does not grant the
+// calendar list, so both scopes are requested, not one in place of the other.
+// A student who connected before this scope existed has a read-only grant and has to
+// reconnect once; GoogleConnection explains that.
+export const GOOGLE_EVENTS_SCOPE = "https://www.googleapis.com/auth/calendar.events";
+
+export const GOOGLE_SCOPES = [GOOGLE_CALENDAR_SCOPE, GOOGLE_EVENTS_SCOPE];
 
 export function fetchGoogleStatus() {
   return apiRequest<GoogleStatus>("/api/google");
@@ -47,7 +56,7 @@ export function disconnectGoogle() {
 export async function connectGoogle(returnTo = { callbackURL: "/settings?google=connected", errorCallbackURL: "/settings?google=error" }) {
   const result = await authClient.linkSocial({
     provider: "google",
-    scopes: [GOOGLE_CALENDAR_SCOPE],
+    scopes: GOOGLE_SCOPES,
     callbackURL: returnTo.callbackURL,
     errorCallbackURL: returnTo.errorCallbackURL
   });
@@ -62,6 +71,16 @@ export async function fetchHiddenSources(): Promise<CalendarSource[]> {
 
 export function saveHiddenSources(hidden: CalendarSource[]) {
   return apiRequest("/api/config", "PUT", { filteredEvents: hidden });
+}
+
+/** UC3: whether CanvasPlus events are copied out to the student's Google Calendar. */
+export async function fetchSyncToGoogle(): Promise<boolean> {
+  const { syncToGoogle } = await apiRequest<{ syncToGoogle?: boolean }>("/api/config");
+  return syncToGoogle === true;
+}
+
+export function saveSyncToGoogle(syncToGoogle: boolean) {
+  return apiRequest("/api/config", "PUT", { syncToGoogle });
 }
 
 /** "9:30 AM" in the viewer's locale. */

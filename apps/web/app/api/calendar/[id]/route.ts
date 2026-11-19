@@ -1,4 +1,5 @@
 import { api } from "@/lib/server/api";
-import { deleteEvent } from "@canvasplus/database/queries/calendar";
+import { deleteEventAndSync } from "@/lib/server/calendarSync";
 
-export const DELETE = api(async ({ user, params }) => deleteEvent(user.id, params.id));
+// UC3: also removes the event's copy from Google Calendar when it has one.
+export const DELETE = api(async ({ user, params }) => deleteEventAndSync(user.id, params.id));

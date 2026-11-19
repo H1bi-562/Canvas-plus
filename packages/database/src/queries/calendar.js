@@ -14,7 +14,9 @@ export async function listEvents(userId, query = {}) {
         ce."eventStart",
         ce."eventEnd",
         ce."assignmentID",
+        ce."googleEventID",
         a.title         AS "assignmentTitle",
+        a."htmlURL"     AS "assignmentURL",
         a.points,
         ad."priorityScore"
       FROM "CalendarEvent" ce
@@ -50,9 +52,10 @@ export async function createEvent(userId, body = {}) {
   }
 
   try {
-    // Verify the assignment belongs to this user
+    // Verify the assignment belongs to this user. Its title and Canvas link come back
+    // too, so a caller pushing this event to Google (UC3) does not need a second query.
     const check = await pool.query(
-      "SELECT id FROM \"Assignment\" WHERE id = $1 AND \"userID\" = $2",
+      "SELECT id, title, \"htmlURL\" FROM \"Assignment\" WHERE id = $1 AND \"userID\" = $2",
       [assignmentID, userId]
     );
     if (check.rows.length === 0) {
@@ -67,7 +70,7 @@ export async function createEvent(userId, body = {}) {
       [assignmentID, title || null, calendar || "primary", eventStart, eventEnd]
     );
 
-    return result.rows[0];
+    return { ...result.rows[0], assignmentTitle: check.rows[0].title, assignmentURL: check.rows[0].htmlURL };
   } catch (err) {
     if (err instanceof HttpError) throw err;
     console.error("Create calendar event error:", err.message);
@@ -84,7 +87,7 @@ export async function deleteEvent(userId, id) {
        WHERE ce.id = $1
          AND ce."assignmentID" = a.id
          AND a."userID" = $2
-       RETURNING ce.id`,
+       RETURNING ce.id, ce."googleEventID"`,
       [id, userId]
     );
 
@@ -92,10 +95,32 @@ export async function deleteEvent(userId, id) {
       throw new HttpError(404, "Calendar event not found" );
     }
 
-    return { message: "Event deleted", id: result.rows[0].id };
+    // googleEventID is returned, not acted on here: removing the copy in Google is the
+    // caller's job (UC3), and the local delete must stand whether or not that succeeds.
+    return { message: "Event deleted", id: result.rows[0].id, googleEventID: result.rows[0].googleEventID };
   } catch (err) {
     if (err instanceof HttpError) throw err;
     console.error("Delete calendar event error:", err.message);
     throw new HttpError(500, "Failed to delete calendar event" );
   }
+}
+
+/**
+ * UC3: remember which Google event this CanvasPlus event was copied to, so it is never
+ * pushed twice and can be removed from Google when it is deleted here. Passing null
+ * clears the link (the copy is gone from Google, or the push is being retried).
+ */
+export async function setEventGoogleID(userId, id, googleEventID) {
+  const result = await pool.query(
+    `UPDATE "CalendarEvent" ce
+        SET "googleEventID" = $3
+       FROM "Assignment" a
+      WHERE ce.id = $1
+        AND ce."assignmentID" = a.id
+        AND a."userID" = $2
+      RETURNING ce.id, ce."googleEventID"`,
+    [id, userId, googleEventID]
+  );
+  if (result.rows.length === 0) throw new HttpError(404, "Calendar event not found");
+  return result.rows[0];
 }

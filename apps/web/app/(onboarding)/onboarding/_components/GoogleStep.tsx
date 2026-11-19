@@ -45,8 +45,9 @@ export default function GoogleStep({ darkMode, onDone, saving, callbackResult }:
   return (
     <>
       <p className={`${s.muted} mb-6`}>
-        Connecting lets CanvasPlus show your Google Calendar events next to your Canvas due dates. It only reads your
-        calendars (calendar.readonly) and never changes them.
+        Connecting lets CanvasPlus show your Google Calendar events next to your Canvas due dates. CanvasPlus reads
+        your calendars, and can add the events you create in CanvasPlus to your calendar if you turn that on later in
+        Settings. It never touches events it did not create.
       </p>
 
       {status === null && <p className={s.muted}>Checking your Google connection…</p>}

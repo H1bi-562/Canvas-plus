@@ -1,6 +1,11 @@
-// Google Calendar import -- read-only, fetched live for the month on screen.
+// Google Calendar: reading the student's events for the month on screen, and (UC3)
+// writing their CanvasPlus events out to Google when they have opted in.
 // Better Auth owns the OAuth grant (linkSocial, encrypted tokens, refresh);
-// this file only asks it for a valid access token and reads events.
+// this file only asks it for a valid access token.
+//
+// Writing needs the calendar.events scope. A student who connected Google before that
+// scope was requested has a read-only grant, so a push comes back 403 and is reported
+// as "reconnect Google Calendar" rather than a dead end.
 
 import axios from "axios";
 import { auth } from "@canvasplus/auth/server";
@@ -76,6 +81,54 @@ export async function listGoogleEvents(userId: string, start?: string, end?: str
     return items.filter(e => e.status !== "cancelled").map(e => toEvent(e, calendar));
   }));
   return lists.flat();
+}
+
+// -- Writing (UC3) -----------------------------------------------------------
+
+/** Turn a Google write failure into a message that tells the student what to do. */
+function writeFailure(err: unknown) {
+  const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+  if (status === 401 || status === 403) {
+    return httpError("Google would not accept the event. Reconnect Google Calendar in Settings and allow CanvasPlus to manage events.", 409);
+  }
+  if (status === 404) return httpError("That Google calendar no longer exists.", 404);
+  return httpError(`Could not write to Google Calendar${status ? ` (HTTP ${status})` : ""}.`, 502);
+}
+
+/**
+ * Create one event in the student's Google Calendar and return Google's id for it.
+ * The caller stores that id, so the event is never pushed twice.
+ */
+export async function createGoogleEvent(userId: string, calendarId: string, body: unknown) {
+  const token = await accessToken(userId);
+  try {
+    const { data } = await axios.post<{ id: string; htmlLink?: string }>(
+      `${API}/calendars/${encodeURIComponent(calendarId)}/events`,
+      body,
+      { headers: { Authorization: `Bearer ${token}` }, timeout: 15000 }
+    );
+    return { id: data.id, htmlLink: data.htmlLink ?? null };
+  } catch (err) {
+    throw writeFailure(err);
+  }
+}
+
+/**
+ * Remove the copy of a CanvasPlus event from Google. An event already gone there (404,
+ * or 410 when Google has it as cancelled) counts as removed, because the goal is simply
+ * that it is no longer on the student's calendar.
+ */
+export async function deleteGoogleEvent(userId: string, calendarId: string, googleEventID: string) {
+  const token = await accessToken(userId);
+  try {
+    await axios.delete(`${API}/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(googleEventID)}`,
+      { headers: { Authorization: `Bearer ${token}` }, timeout: 15000 });
+    return { removed: true };
+  } catch (err) {
+    const status = axios.isAxiosError(err) ? err.response?.status : undefined;
+    if (status === 404 || status === 410) return { removed: true };
+    throw writeFailure(err);
+  }
 }
 
 /** Revoke at Google (best effort), then drop the local grant either way. */
